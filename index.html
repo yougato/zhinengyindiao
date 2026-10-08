@@ -120,6 +120,10 @@
   .jp-num{font-size:11px;font-weight:900;line-height:1;letter-spacing:-.03em;}
   .name-label{font-size:9px;font-weight:800;}
   .note.tiny .note-label{display:none;}
+  .note.selected{outline:2px solid #ffffff;outline-offset:-1px;box-shadow:0 0 0 2px rgba(59,110,245,.95),0 2px 10px rgba(0,0,0,.5);}
+  /* ★ 框选矩形 */
+  .marquee{position:absolute;display:none;left:0;top:0;border:1px solid #7c5cff;background:rgba(124,92,255,.16);border-radius:3px;pointer-events:none;z-index:6;}
+  body.marquee-mode,body.marquee-mode *{cursor:crosshair !important;}
   /* ★ 歌词：带歌词的音符块改成上下两行（音名/简谱 + 歌词） */
   .note.has-lyric{flex-direction:column;gap:0;}
   .note-lyric{display:none;pointer-events:none;line-height:1;font-weight:700;font-size:8px;color:rgba(0,0,0,.62);max-width:100%;overflow:hidden;white-space:nowrap;}
@@ -455,6 +459,7 @@
   <div class="divider"></div>
   <label class="field"><input id="metroInput" type="checkbox"> 节拍器</label>
   <label class="field"><input id="loopInput" type="checkbox" checked> 循环</label>
+  <span class="field" id="selInfo" style="color:#8a95ad;"></span>
 </div>
 
 <div class="main">
@@ -492,6 +497,7 @@
       <p><b>鼓轨</b>：点「🥁 鼓轨」一键生成预设鼓点（按当前拍号，最多 32 小节）</p>
       <p><b>歌词</b>：左侧「歌词」面板批量填词，或 <b>Alt+点击</b>音符逐个改</p>
       <p><b>简谱</b>：点「📄 简谱」把目标轨导出为 SVG（含歌词、小节线）</p>
+      <p><b>框选复制</b>：Shift+拖空白框选（只作用于当前轨）· Shift+点音符加减选 · Ctrl+拖音符复制 · Ctrl+C/X/V/D · Del 删除 · Esc 取消</p>
       <p><b>打击乐</b>：底鼓 / 军鼓 / 踩镲 / 嗵鼓 / 吊镲 / 鼓组</p>
       <p><b>鼓组映射</b>：C 底鼓 · D 军鼓 · E 踩镲 · F–G 嗵鼓 · A 吊镲</p>
       <p><b>轨道条高度</b>：拖拽顶部横条上下拉动（双击复位）</p>
@@ -515,6 +521,7 @@
           <div class="playhead" id="playhead"></div>
           <div class="playhead-hit" id="playheadHit"></div>
           <div class="fade-edge"></div>
+          <div class="marquee" id="marquee"></div>
         </div>
         <div class="lyric-lane" id="lyricLane"><div class="lyric-layer" id="lyricLayer"></div></div>
       </div>
@@ -894,6 +901,7 @@ const lyricInput = $('lyricInput'), lyricApplyBtn = $('lyricApplyBtn'), lyricCle
 const lyricShowToggle = $('lyricShowToggle'), lyricTarget = $('lyricTarget'), lyricInfo = $('lyricInfo');
 const lyricTrackSelect = $('lyricTrackSelect');
 const lyricEditor = $('lyricEditor'), lyricEditorInput = $('lyricEditorInput');
+const marqueeEl = $('marquee'), selInfo = $('selInfo');
 
 function setPlayhead(sub, show){
   playheadSub = clamp(sub, 0, totalSub());
@@ -1462,11 +1470,18 @@ function createNoteEl(n){
 }
 function renderNotes(){
   noteLayer.innerHTML='';
+  noteEls = {};
   const frag=document.createDocumentFragment();
-  for(let i=0;i<S.notes.length;i++) frag.appendChild(createNoteEl(S.notes[i]));
+  for(let i=0;i<S.notes.length;i++){
+    const n = S.notes[i];
+    const el = createNoteEl(n);
+    noteEls[n.id] = el;
+    frag.appendChild(el);
+  }
   noteLayer.appendChild(frag);
   ensureCapacity(contentEnd() + unitSub());
   renderLyrics();
+  refreshSelectionUI();
 }
 
 /* ================= ★ 歌词 ================= */
@@ -1667,6 +1682,245 @@ document.addEventListener('pointerdown', function(e){
   e.stopPropagation();
   e.preventDefault();
 }, true);
+
+/* ================= ★ 框选 / 复制粘贴 ================= */
+const selectedIds = new Set();
+let noteEls = {};                 /* 音符 id → DOM 元素，renderNotes 时重建 */
+let clipboard = null;             /* { base, items[] } 内部剪贴板 */
+let selInfoTimer = null;
+
+function pruneSelection(){
+  if(!selectedIds.size) return;
+  const alive = {};
+  for(let i = 0; i < S.notes.length; i++){
+    const n = S.notes[i];
+    if(n.trackId === S.activeTrackId) alive[n.id] = true;   /* 选择只保留当前轨道的音符 */
+  }
+  selectedIds.forEach(id => { if(!alive[id]) selectedIds.delete(id); });
+}
+function updateSelInfo(){
+  const parts = [];
+  if(selectedIds.size) parts.push('已选 ' + selectedIds.size + ' 个');
+  if(clipboard && clipboard.items.length) parts.push('剪贴板 ' + clipboard.items.length + ' 个');
+  selInfo.textContent = parts.join(' · ');
+}
+function flashSelInfo(msg){
+  selInfo.textContent = msg;
+  if(selInfoTimer) clearTimeout(selInfoTimer);
+  selInfoTimer = setTimeout(updateSelInfo, 1800);
+}
+function refreshSelectionUI(){
+  pruneSelection();
+  Object.keys(noteEls).forEach(id => {
+    const el = noteEls[id];
+    if(el) el.classList.toggle('selected', selectedIds.has(Number(id)));
+  });
+  updateSelInfo();
+}
+function setSelection(ids){
+  selectedIds.clear();
+  (ids || []).forEach(id => selectedIds.add(id));
+  refreshSelectionUI();
+}
+/* 框选拖动时每帧调用：集合没变就不碰 DOM，避免无谓重排 */
+function setSelectionIfChanged(ids){
+  if(ids.length === selectedIds.size){
+    let same = true;
+    for(let i = 0; i < ids.length; i++){
+      if(!selectedIds.has(ids[i])){ same = false; break; }
+    }
+    if(same) return;
+  }
+  setSelection(ids);
+}
+function selectedNotes(){
+  return S.notes.filter(n => selectedIds.has(n.id));
+}
+function clearSelection(){
+  if(!selectedIds.size) return;
+  selectedIds.clear();
+  refreshSelectionUI();
+}
+/* ---- 框选：Shift + 在空白处拖动；Ctrl+Shift 拖动为追加选择 ---- */
+let marquee = null;
+function startMarquee(e){
+  if(drag || marquee) return;                     /* 已经在拖音符或框选，不再起新的框选 */
+  const g = gridCoords(e.clientX, e.clientY);
+  marquee = { x0: g.x, y0: g.y, x1: g.x, y1: g.y, add: !!(e.ctrlKey || e.metaKey) };
+  marqueeEl.style.display = 'block';
+  document.addEventListener('pointermove', onMarqueeMove, {passive:false});
+  document.addEventListener('pointerup', onMarqueeEnd);
+  document.addEventListener('pointercancel', onMarqueeEnd);
+  document.body.classList.add('marquee-mode');
+  if(!marquee.add) clearSelection();
+  updateMarqueeBox();
+}
+function updateMarqueeBox(){
+  if(!marquee) return;
+  const l = Math.min(marquee.x0, marquee.x1), t = Math.min(marquee.y0, marquee.y1);
+  marqueeEl.style.left   = l + 'px';
+  marqueeEl.style.top    = t + 'px';
+  marqueeEl.style.width  = Math.abs(marquee.x1 - marquee.x0) + 'px';
+  marqueeEl.style.height = Math.abs(marquee.y1 - marquee.y0) + 'px';
+}
+function onMarqueeMove(e){
+  if(!marquee) return;
+  e.preventDefault();
+  autoScroll(e.clientX);
+  const g = gridCoords(e.clientX, e.clientY);
+  marquee.x1 = g.x; marquee.y1 = g.y;
+  updateMarqueeBox();
+  const l = Math.min(marquee.x0, marquee.x1), r = Math.max(marquee.x0, marquee.x1);
+  const t = Math.min(marquee.y0, marquee.y1), b = Math.max(marquee.y0, marquee.y1);
+  const ids = [];
+  const activeId = S.activeTrackId;
+  S.notes.forEach(n => {
+    if(n.trackId !== activeId) return;               /* 框选只作用于当前选中的轨道 */
+    const nx = n.start * subW, nw = Math.max(3, n.length * subW - 2);
+    const ny = (PITCH_HIGH - n.pitch) * rowH, nh = Math.max(5, rowH - 3);
+    if(nx + nw >= l && nx <= r && ny + nh >= t && ny <= b) ids.push(n.id);
+  });
+  setSelectionIfChanged(ids);
+}
+function onMarqueeEnd(){
+  if(!marquee) return;
+  marquee = null;
+  marqueeEl.style.display = 'none';
+  document.removeEventListener('pointermove', onMarqueeMove);
+  document.removeEventListener('pointerup', onMarqueeEnd);
+  document.removeEventListener('pointercancel', onMarqueeEnd);
+  document.body.classList.remove('marquee-mode');
+  refreshSelectionUI();
+}
+/* ---- 复制 / 粘贴 / 删除 / 原地复制 ---- */
+function copySelection(){
+  const list = selectedNotes();
+  if(!list.length) return false;
+  const base = list.reduce((m, n) => Math.min(m, n.start), list[0].start);
+  clipboard = {
+    base: base,
+    items: list.map(n => ({ trackId: n.trackId, pitch: n.pitch, start: n.start - base,
+                            length: n.length, velocity: n.velocity || 0.85,
+                            lyric: n.lyric || '' }))
+  };
+  flashSelInfo('已复制 ' + clipboard.items.length + ' 个音符');
+  return true;
+}
+function pasteClipboard(){
+  if(!clipboard || !clipboard.items.length) return;
+  const target = getActiveTrack();                 /* 粘贴统一落到当前选中的轨道 */
+  if(!target) return;
+  const at = snapSub(clamp(Math.round(playheadSub), 0, totalSub()));
+  const before = snapshotAll();
+  const ids = [];
+  clipboard.items.forEach(it => {
+    const n = { id: S.nextId++, trackId: target.id, pitch: it.pitch,
+                start: Math.max(0, at + it.start), length: it.length,
+                velocity: it.velocity };
+    if(it.lyric) n.lyric = it.lyric;
+    S.notes.push(n);
+    ids.push(n.id);
+  });
+  if(!ids.length) return;
+  ensureCapacity(contentEnd() + unitSub());
+  renderNotes();
+  setSelection(ids);
+  commitAction(before);
+  flashSelInfo('已粘贴 ' + ids.length + ' 个音符到播放线');
+}
+function deleteSelection(){
+  if(!selectedIds.size) return;
+  const before = snapshotAll();
+  S.notes = S.notes.filter(n => !selectedIds.has(n.id));
+  selectedIds.clear();
+  renderNotes();
+  commitAction(before);
+}
+function duplicateSelection(){
+  const list = selectedNotes();
+  if(!list.length) return;
+  const shift = Math.max(1, subPerBar());
+  const before = snapshotAll();
+  const ids = [];
+  list.forEach(n => {
+    const copy = { id: S.nextId++, trackId: n.trackId, pitch: n.pitch,
+                   start: n.start + shift, length: n.length,
+                   velocity: n.velocity || 0.85 };
+    if(n.lyric) copy.lyric = n.lyric;
+    S.notes.push(copy);
+    ids.push(copy.id);
+  });
+  ensureCapacity(contentEnd() + unitSub());
+  renderNotes();
+  setSelection(ids);
+  commitAction(before);
+  flashSelInfo('已复制到后一小节');
+}
+function selectAllActiveTrack(){
+  const t = getActiveTrack();
+  if(!t) return;
+  setSelection(S.notes.filter(n => n.trackId === t.id).map(n => n.id));
+  flashSelInfo('已选中当前轨 ' + selectedIds.size + ' 个音符');
+}
+/* ---- 多选拖动 / Ctrl 拖动复制（由拖拽状态机调用） ---- */
+function noteElById(id){
+  return noteEls[id] || noteLayer.querySelector('.note[data-id="' + id + '"]');
+}
+function refreshGroupEls(){
+  if(!drag || !drag.group) return;
+  drag.group.forEach(item => {
+    const el = noteElById(item.note.id);
+    if(!el) return;
+    el.style.left = (item.note.start * subW + 1) + 'px';
+    el.style.top  = ((PITCH_HIGH - item.note.pitch) * rowH + 1) + 'px';
+    el.style.background = noteColor(item.note.pitch);
+    refreshNoteLabel(el, item.note);
+  });
+  renderLyrics();
+}
+function applyGroupDrag(dSub, dPitch){
+  const group = drag.group;
+  if(!group || !group.length) return;
+  let minStart = Infinity, maxEnd = -Infinity, minPitch = Infinity, maxPitch = -Infinity;
+  group.forEach(item => {
+    minStart = Math.min(minStart, item.start);
+    maxEnd   = Math.max(maxEnd, item.start + item.note.length);
+    minPitch = Math.min(minPitch, item.pitch);
+    maxPitch = Math.max(maxPitch, item.pitch);
+  });
+  let ds = Math.max(dSub, -minStart);                 /* 整组不越左边界 */
+  ds = Math.min(ds, totalSub() - maxEnd);             /* 与右边界 */
+  let dp = Math.max(dPitch, PITCH_LOW - minPitch);    /* 音高上下限 */
+  dp = Math.min(dp, PITCH_HIGH - maxPitch);
+  group.forEach(item => {
+    item.note.start = item.start + ds;
+    item.note.pitch = item.pitch + dp;
+  });
+  refreshGroupEls();
+}
+function cloneDragGroup(){
+  if(!drag || drag.cloned) return;
+  drag.cloned = true;
+  const newGroup = drag.group.map(item => {
+    const src = item.note;
+    const copy = { id: S.nextId++, trackId: src.trackId, pitch: item.pitch,
+                   start: item.start, length: src.length,
+                   velocity: src.velocity || 0.85 };
+    if(src.lyric) copy.lyric = src.lyric;
+    S.notes.push(copy);
+    const el = createNoteEl(copy);
+    noteLayer.appendChild(el);
+    noteEls[copy.id] = el;
+    return { note: copy, start: item.start, pitch: item.pitch };
+  });
+  drag.origGroup = drag.group;          /* 保留原始组，零位移时可回滚这次复制 */
+  drag.group = newGroup;
+  drag.note = newGroup[0].note;
+  drag.el = noteElById(drag.note.id);
+  setSelection(newGroup.map(it => it.note.id));
+  ensureCapacity(contentEnd() + unitSub());
+}
+
 function ensureCapacity(neededSubs){
   const sBar = subPerBar();
   const needBars = Math.ceil(neededSubs / sBar);
@@ -2136,6 +2390,7 @@ function unbindMove(){
 }
 noteLayer.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse' && e.button!==0) return;
+  if(marquee) return;                              /* 框选进行中忽略网格上的第二次按下 */
   const noteEl = e.target.closest ? e.target.closest('.note') : null;
   if(noteEl){
     const note = S.notes.find(n=>n.id===Number(noteEl.dataset.id));
@@ -2147,16 +2402,32 @@ noteLayer.addEventListener('pointerdown',function(e){
       renderTracks(); renderNotes();
       return;
     }
+    const isHandle = e.target.classList.contains('handle');
+    /* Shift+点击音符：切换它的选中状态，不进入拖动 */
+    if(e.shiftKey && !isHandle){
+      if(selectedIds.has(note.id)) selectedIds.delete(note.id);
+      else selectedIds.add(note.id);
+      refreshSelectionUI();
+      return;
+    }
+    /* 点中的音符不在选择集合里 → 让它成为唯一选中项 */
+    if(!selectedIds.has(note.id)) setSelection([note.id]);
     const g=gridCoords(e.clientX,e.clientY);
     const before=snapshotAll();
-    if(e.target.classList.contains('handle')){
+    if(isHandle){
       drag={mode:'resize',note,el:noteEl,before};
     }else{
-      drag={mode:'move',note,el:noteEl,before,offX:g.x-note.start*subW,offY:g.y-(PITCH_HIGH-note.pitch)*rowH};
+      const group = selectedNotes().map(n => ({ note:n, start:n.start, pitch:n.pitch }));
+      drag={mode:'move', note, el:noteEl, before,
+            group: group.length ? group : [{note:note, start:note.start, pitch:note.pitch}],
+            anchorStart: note.start, anchorPitch: note.pitch,
+            copying: !!(e.ctrlKey || e.metaKey), cloned:false,
+            offX:g.x-note.start*subW, offY:g.y-(PITCH_HIGH-note.pitch)*rowH};
     }
     bindMove();
   }else{
     e.preventDefault();
+    if(e.shiftKey){ startMarquee(e); return; }   /* Shift+拖动空白 = 框选 */
     startDraw(e);
   }
 });
@@ -2242,21 +2513,12 @@ function onDocMove(e){
   }
   if(drag.mode==='move'){
     if(g.x > ts*subW - beatW) growToPointer(g.x);
-    const left=g.x-drag.offX;
-    const top =g.y-drag.offY;
-    let startSub = snapSub(left/subW);
-    startSub = clamp(startSub, 0, totalSub()-drag.note.length);
-    const row   = clamp(Math.round(top/rowH),0,ROWS-1);
-    const pitch = PITCH_HIGH-row;
-    if(startSub!==drag.note.start || pitch!==drag.note.pitch){
-      drag.note.start=startSub;
-      drag.note.pitch=pitch;
-      drag.el.style.left=(startSub*subW+1)+'px';
-      drag.el.style.top =((PITCH_HIGH-pitch)*rowH+1)+'px';
-      drag.el.style.background=noteColor(pitch);
-      refreshNoteLabel(drag.el, drag.note);
-      renderLyrics();
-    }
+    if(drag.copying && !drag.cloned) cloneDragGroup();   /* Ctrl 拖动：首次移动才生成副本 */
+    const left = g.x - drag.offX;
+    const top  = g.y - drag.offY;
+    const startSub = snapSub(left / subW);
+    const row = clamp(Math.round(top / rowH), 0, ROWS - 1);
+    applyGroupDrag(startSub - drag.anchorStart, (PITCH_HIGH - row) - drag.anchorPitch);
     return;
   }
   if(drag.mode==='resize'){
@@ -2294,6 +2556,19 @@ function onDocUp(){
   const d=drag;
   drag=null;
   unbindMove();
+  /* Ctrl 拖动复制了却没真正移动 → 撤掉副本，避免留下完全重合的音符 */
+  if(d.mode === 'move' && d.cloned && d.group){
+    const moved = d.group.some(it => it.note.start !== it.start || it.note.pitch !== it.pitch);
+    if(!moved){
+      const drop = {};
+      d.group.forEach(it => { drop[it.note.id] = true; });
+      S.notes = S.notes.filter(n => !drop[n.id]);
+      renderNotes();
+      if(d.origGroup) setSelection(d.origGroup.map(it => it.note.id));
+      commitAction(d.before);
+      return;
+    }
+  }
   if(d.mode === 'chord'){
     hideChordPreview();
     const pitches = fitChord(d.rootPitch, d.chord.intervals);
@@ -3202,6 +3477,7 @@ function applyProject(p){
   renderTracks(); renderNotes();
   setPlayhead(0, true); stageEl.scrollLeft = 0;
   fillLyricInputFromTrack();
+  selectedIds.clear(); refreshSelectionUI();   /* 项目重新编号了音符 id，清掉旧选择避免误删 */
   undoStack.length = 0; updateUndoBtn();
 }
 function renderProjects(){
@@ -3880,6 +4156,12 @@ window.addEventListener('keydown',function(e){
   else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); }
   else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); openProjects(); }
   else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); exportMP3(); }
+  else if((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='a'){ e.preventDefault(); selectAllActiveTrack(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='c'){ e.preventDefault(); copySelection(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='x'){ e.preventDefault(); if(copySelection()) deleteSelection(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='v'){ e.preventDefault(); pasteClipboard(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='d'){ e.preventDefault(); duplicateSelection(); }
+  else if(e.key==='Delete' || e.key==='Backspace'){ e.preventDefault(); deleteSelection(); }
   else if(e.key==='Escape'){
     if(chordMode){
       chordMode = null;
@@ -3892,6 +4174,8 @@ window.addEventListener('keydown',function(e){
       lastChordPreviewKey = '';
       return;
     }
+    if(marquee){ onMarqueeEnd(); return; }       /* 框选中按 Esc：结束框选 */
+    if(selectedIds.size){ clearSelection(); return; }
     if(projModal.classList.contains('open')) closeProjects();
     else if(aiPanel.classList.contains('open')) closeAI();
   }
