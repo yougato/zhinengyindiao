@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>曲调创造器 · MP3 导出</title>
+<title>曲调创造器 · 多轨混音</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{
@@ -21,71 +21,59 @@
   .btn:hover{background:#232a3d;border-color:#3a4560;}
   .btn:active{transform:translateY(1px);}
   .btn:disabled{opacity:.35;cursor:not-allowed;}
-  .btn:disabled:hover{background:#1b2030;border-color:var(--line2);}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 14px rgba(59,110,245,.35);}
   .btn.primary:hover{background:#4d7dff;}
-  .btn.primary.playing{background:#e5484d;border-color:#e5484d;box-shadow:0 3px 14px rgba(229,72,77,.35);}
+  .btn.primary.playing{background:#e5484d;border-color:#e5484d;}
   .btn.danger:hover{background:#3a1f26;border-color:#6b2f38;color:#ff9aa2;}
   .btn.rand{background:#1e2a44;border-color:#2f4270;color:#a9c1ff;}
-  .btn.rand:hover{background:#26365a;border-color:#3d5894;}
-  .btn.ai{background:linear-gradient(135deg,#6d4bff,#9b6dff);border-color:#7c5cff;color:#fff;box-shadow:0 3px 14px rgba(124,92,255,.4);font-weight:600;}
-  .btn.ai:hover{background:linear-gradient(135deg,#7f5dff,#ad7fff);}
+  .btn.ai{background:linear-gradient(135deg,#6d4bff,#9b6dff);border-color:#7c5cff;color:#fff;font-weight:600;}
   .btn.proj{background:#17261f;border-color:#2a4a3a;color:#8de0b4;}
-  .btn.proj:hover{background:#1e3329;border-color:#3d6a52;}
   .btn.mp3{background:#33201a;border-color:#5a3428;color:#ffb894;}
-  .btn.mp3:hover{background:#42291f;border-color:#7a4634;}
+  .btn.drum{background:#2a2318;border-color:#5a4a28;color:#f0d190;}
+  .btn.drum:hover{background:#3a3020;border-color:#7a6636;color:#ffe9b0;}
   .divider{width:1px;height:22px;background:var(--line);}
   .field{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);user-select:none;white-space:nowrap;}
   .field input[type=number]{width:54px;font-family:inherit;font-size:12.5px;padding:5px 7px;border-radius:7px;border:1px solid var(--line2);background:#0f1219;color:var(--text);outline:none;}
-  .field input[type=number]:focus{border-color:var(--accent);}
   .field select{font-family:inherit;font-size:12.5px;padding:5px 6px;border-radius:7px;border:1px solid var(--line2);background:#0f1219;color:var(--text);outline:none;cursor:pointer;}
-  .field select:focus{border-color:var(--accent);}
   .field input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
   .field input[type=range]{accent-color:var(--accent);width:92px;cursor:pointer;}
   .spacer{flex:1;}
-
   .field.ai-flash{animation:aiFlash 1.4s ease;}
-  @keyframes aiFlash{
-    0%,100%{background:transparent;}
-    30%,60%{background:rgba(124,92,255,.18);border-radius:6px;}
-  }
+  @keyframes aiFlash{0%,100%{background:transparent;}30%,60%{background:rgba(124,92,255,.18);border-radius:6px;}}
 
   .main{flex:1;display:flex;overflow:hidden;min-height:0;}
-
   .palette{flex:none;width:216px;background:var(--panel);border-right:1px solid var(--line);padding:13px 11px;overflow-y:auto;}
   .palette h3{font-size:10px;font-weight:700;letter-spacing:.15em;color:#5d6680;text-transform:uppercase;margin:0 0 9px;}
   .palette h3:not(:first-child){margin-top:16px;}
 
   .dur-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
   .dur-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 2px 6px;border-radius:9px;border:1px solid var(--line2);background:#151a26;cursor:pointer;transition:all .14s;user-select:none;}
-  .dur-btn:hover{background:#1d2433;border-color:#3a4560;}
-  .dur-btn.active{background:linear-gradient(180deg,#243258,#1b2440);border-color:var(--accent);box-shadow:0 0 0 1px rgba(59,110,245,.5),0 3px 12px rgba(59,110,245,.28);}
+  .dur-btn:hover{background:#1d2433;}
+  .dur-btn.active{background:linear-gradient(180deg,#243258,#1b2440);border-color:var(--accent);}
   .dur-btn svg{display:block;}
   .dur-btn .dlbl{font-size:9px;font-weight:700;color:#7b869e;}
   .dur-btn.active .dlbl{color:#a9c1ff;}
 
   .chips{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-  .chip{height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;color:rgba(0,0,0,.75);cursor:grab;user-select:none;touch-action:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.2),0 1px 4px rgba(0,0,0,.35);transition:transform .12s,box-shadow .12s;position:relative;}
+  .chip{height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;color:rgba(0,0,0,.75);cursor:grab;user-select:none;touch-action:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.2),0 1px 4px rgba(0,0,0,.35);transition:transform .12s;position:relative;}
   .chip.black{color:rgba(255,255,255,.82);}
-  .chip::after{content:"";position:absolute;left:6px;right:6px;top:6px;height:1px;background:rgba(255,255,255,.4);border-radius:1px;}
-  .chip:hover{transform:translateY(-2px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2),0 6px 16px rgba(0,0,0,.5);}
+  .chip:hover{transform:translateY(-2px);}
   .chip:active{cursor:grabbing;transform:translateY(0);}
 
   .chord-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
   .chord-btn{font-family:inherit;font-size:11px;font-weight:600;padding:7px 3px;border-radius:7px;border:1px solid #3a2a4c;background:#1a1424;color:#b09cd8;cursor:pointer;transition:all .14s;text-align:center;white-space:nowrap;overflow:hidden;}
-  .chord-btn:hover{background:#26193a;border-color:#6b4a94;color:#d4b8ff;}
-  .chord-btn.active{background:linear-gradient(180deg,#4a2f6a,#2a1a44);border-color:#a06fff;color:#fff;box-shadow:0 0 0 1px rgba(160,111,255,.5),0 3px 12px rgba(160,111,255,.4);}
+  .chord-btn:hover{background:#26193a;color:#d4b8ff;}
+  .chord-btn.active{background:linear-gradient(180deg,#4a2f6a,#2a1a44);border-color:#a06fff;color:#fff;}
   .chord-hint{font-size:10px;color:#5d6680;margin-top:7px;line-height:1.55;padding:6px 8px;background:#0f1219;border-radius:7px;border-left:2px solid #4a3468;}
   .chord-hint.active{color:#d4b8ff;border-left-color:#a06fff;background:#1a1424;}
 
   .chord-info{margin-top:14px;padding:9px 11px;background:#0f1219;border-radius:8px;border:1px solid var(--line);}
   .chord-info-label{font-size:9.5px;font-weight:700;letter-spacing:.12em;color:#5d6680;text-transform:uppercase;}
-  .chord-info-value{font-size:14px;font-weight:800;color:#98a3bb;margin-top:4px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.02em;}
+  .chord-info-value{font-size:14px;font-weight:800;color:#98a3bb;margin-top:4px;font-family:ui-monospace,Menlo,monospace;}
 
   .tips{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line2);}
   .tips p{font-size:10.5px;line-height:1.7;color:#5d6680;}
   .tips b{color:#8a95ad;font-weight:600;}
-
   .legend{margin-top:12px;padding-top:11px;border-top:1px dashed var(--line2);}
   .legend-title{font-size:10px;font-weight:700;letter-spacing:.12em;color:#5d6680;text-transform:uppercase;margin-bottom:7px;}
   .legend-line{font-size:10.5px;color:#7b859a;line-height:1.9;font-family:ui-monospace,Menlo,monospace;}
@@ -94,19 +82,17 @@
 
   .stage{flex:1;overflow:auto;padding:18px;min-width:0;position:relative;}
   .editor{display:inline-flex;align-items:flex-start;border:1px solid var(--line);border-radius:12px;background:#0d1017;box-shadow:0 20px 60px rgba(0,0,0,.6);min-width:100%;}
-  .piano-col{flex:none;width:60px;background:#131722;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;left:0;z-index:6;box-shadow:6px 0 14px -8px rgba(0,0,0,.9);}
+  .piano-col{flex:none;width:60px;background:#131722;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;left:0;z-index:6;}
   .corner{height:26px;background:#0f121a;border-bottom:1px solid var(--line);}
-  .key{display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:8.5px;font-weight:700;color:#6d768d;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;user-select:none;transition:background .1s,color .1s;-webkit-tap-highlight-color:transparent;overflow:hidden;}
+  .key{display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:8.5px;font-weight:700;color:#6d768d;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;user-select:none;transition:background .1s,color .1s;overflow:hidden;}
   .key:hover{background:#1c2231;color:#a8b2c8;}
   .key.black{background:#0b0e15;color:#454d61;}
-  .key.black:hover{background:#141926;}
   .key.active{background:var(--accent);color:#fff;}
 
   .grid-col{flex:none;display:flex;flex-direction:column;position:relative;}
   .ruler{height:26px;display:flex;background:#0f121a;border-bottom:1px solid var(--line);position:relative;z-index:3;overflow:hidden;cursor:ew-resize;touch-action:none;user-select:none;}
   .ruler-cell{flex:none;height:100%;display:flex;align-items:center;padding-left:5px;font-size:8.5px;font-weight:700;color:#454d61;border-right:1px solid rgba(255,255,255,.05);overflow:hidden;white-space:nowrap;}
   .ruler-cell.bar{color:#8b96b0;border-right-color:rgba(255,255,255,.18);background:rgba(255,255,255,.014);}
-  .ruler-cell.beat{color:#3d4457;}
 
   .grid{position:relative;background:#0d1017;touch-action:none;user-select:none;overflow:hidden;
     background-image:
@@ -119,10 +105,10 @@
   .grid-row:last-child{border-bottom:none;}
   .note-layer{position:absolute;inset:0;z-index:2;}
 
-  .note{position:absolute;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:0 4px;cursor:grab;touch-action:none;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.5),inset 0 -2px 0 rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.4);will-change:left,top,width;}
-  .note:hover{filter:brightness(1.14);}
+  .note{position:absolute;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:0 4px;cursor:grab;touch-action:none;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.5),inset 0 -2px 0 rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.4);will-change:left,top,width;transition:opacity .15s;}
+  .note.other-track{opacity:0.32;}
+  .note:hover{filter:brightness(1.14);opacity:1 !important;}
   .note .handle{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:ew-resize;background:linear-gradient(to right,transparent,rgba(0,0,0,.22));}
-  .note .handle:hover{background:linear-gradient(to right,transparent,rgba(255,255,255,.6));}
   .note-label{display:flex;align-items:center;justify-content:center;pointer-events:none;line-height:1;font-weight:800;color:rgba(0,0,0,.76);white-space:nowrap;}
   .jp{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;gap:1px;}
   .jp-dots{display:flex;gap:1.5px;line-height:0;height:3px;align-items:center;}
@@ -135,137 +121,248 @@
 
   .preview{position:absolute;display:none;pointer-events:none;z-index:3;border-radius:4px;}
   .playhead{position:absolute;left:0;top:0;bottom:0;width:2px;background:#ff4d6a;box-shadow:0 0 12px rgba(255,77,106,.95);z-index:4;display:none;pointer-events:none;will-change:transform;}
-  .playhead::before{content:"";position:absolute;left:50%;top:0;width:9px;height:9px;border-radius:50%;transform:translateX(-50%);background:#ff4d6a;box-shadow:0 0 8px rgba(255,77,106,.95);}
+  .playhead::before{content:"";position:absolute;left:50%;top:0;width:9px;height:9px;border-radius:50%;transform:translateX(-50%);background:#ff4d6a;}
   .playhead-hit{position:absolute;left:0;top:0;bottom:0;width:12px;z-index:5;cursor:ew-resize;touch-action:none;display:none;will-change:transform;}
   .fade-edge{position:absolute;right:0;top:0;bottom:0;width:56px;pointer-events:none;z-index:3;background:linear-gradient(to right,transparent,rgba(10,12,18,.85));}
 
-  .drag-ghost{position:fixed;left:0;top:0;z-index:9999;pointer-events:none;padding:5px 11px;border-radius:8px;font-size:11px;font-weight:800;color:rgba(0,0,0,.78);box-shadow:0 10px 30px rgba(0,0,0,.55);opacity:.94;will-change:transform;}
+  .drag-ghost{position:fixed;left:0;top:0;z-index:9999;pointer-events:none;padding:5px 11px;border-radius:8px;font-size:11px;font-weight:800;color:rgba(0,0,0,.78);box-shadow:0 10px 30px rgba(0,0,0,.55);opacity:.94;}
   body.dragging,body.dragging *{cursor:grabbing !important;}
   body.scrubbing,body.scrubbing *{cursor:ew-resize !important;}
-  body.chord-mode,body.chord-mode .grid,body.chord-mode .note-layer{cursor:crosshair !important;}
+  body.chord-mode,body.chord-mode .grid{cursor:crosshair !important;}
 
+  /* ============ ★ 轨道条 —— 加大尺寸 ============ */
+  .trackbar{
+    flex:none;
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    display:flex;
+    align-items:stretch;
+    height:var(--trackbar-h, 150px);   /* ★ 默认 150，可上下拖拽调整 */
+    transition:height .25s ease;
+    overflow:hidden;
+    position:relative;
+  }
+  .trackbar.collapsed{height:34px;}
+  .trackbar.resizing{transition:none;}          /* 拖拽中取消过渡，跟手 */
+  /* ★ 拖拽把手：位于轨道条顶部，向上拖变高、向下拖变矮 */
+  .trackbar-resizer{
+    position:absolute;left:0;right:0;top:0;height:10px;
+    z-index:8;cursor:ns-resize;touch-action:none;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .trackbar-resizer::after{
+    content:"";width:54px;height:3px;border-radius:3px;
+    background:#2b3244;transition:background .15s,width .15s;
+  }
+  .trackbar-resizer:hover::after,
+  .trackbar-resizer.active::after{background:var(--accent);width:84px;}
+  body.resizing,body.resizing *{cursor:ns-resize !important;user-select:none !important;}
+  .trackbar-header{
+    flex:none;
+    width:100px;
+    padding:9px 10px;
+    border-right:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    background:var(--panel2);
+  }
+  .trackbar-title{
+    font-size:10px;font-weight:800;letter-spacing:.14em;
+    color:#5d6680;text-transform:uppercase;
+    display:flex;align-items:center;gap:5px;cursor:pointer;
+    user-select:none;
+  }
+  .trackbar-title .arrow{font-size:9px;color:#4a5266;transition:transform .2s;}
+  .trackbar.collapsed .trackbar-title .arrow{transform:rotate(-90deg);}
+  .trackbar-add{
+    font-family:inherit;font-size:11px;font-weight:600;
+    padding:6px 9px;border-radius:7px;
+    border:1px dashed #2e4a3a;background:#141d18;color:#8de0b4;
+    cursor:pointer;transition:all .14s;
+  }
+  .trackbar-add:hover{background:#1a2921;border-color:#4a7a5a;color:#a8f0c8;}
+  .track-list{
+    flex:1;
+    display:flex;
+    gap:10px;
+    padding:10px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    align-items:stretch;
+  }
+
+  /* ★ 轨道卡片 —— 加宽 */
+  .track-card{
+    flex:none;
+    width:264px;                   /* ★ 198 → 264 */
+    border-radius:10px;
+    border:1px solid var(--line2);
+    background:#131824;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    transition:border-color .15s, box-shadow .15s;
+    cursor:pointer;
+    position:relative;
+  }
+  .track-card.active{
+    border-color:var(--accent);
+    box-shadow:0 0 0 1px var(--accent),0 4px 14px rgba(59,110,245,.3);
+  }
+  .track-card.muted{opacity:.55;}
+  .track-card::before{
+    content:"";
+    position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:var(--track-color, #4a7dff);
+  }
+  .track-header{
+    display:flex;align-items:center;gap:6px;
+    padding:7px 8px 7px 13px;
+    border-bottom:1px solid #1c2233;
+  }
+  .track-name{
+    flex:1;min-width:0;
+    font-size:12.5px;font-weight:700;color:#cfd6e6;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    cursor:text;
+  }
+  .track-name-input{
+    flex:1;min-width:0;font-family:inherit;font-size:12.5px;
+    padding:2px 5px;border-radius:4px;
+    border:1px solid var(--accent);background:#0a0d14;color:#fff;
+    outline:none;font-weight:700;
+  }
+  .track-mute,.track-solo{
+    flex:none;width:22px;height:22px;border-radius:5px;
+    font-family:inherit;font-size:10px;font-weight:800;
+    border:1px solid var(--line2);background:#1b2030;color:#6b7488;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .12s;padding:0;
+  }
+  .track-mute:hover,.track-solo:hover{background:#232a3d;color:#cfd6e6;}
+  .track-mute.on{background:#5a3428;border-color:#7a4634;color:#ffb894;}
+  .track-solo.on{background:#4a3f14;border-color:#7a6a24;color:#f0e08a;}
+  .track-del{
+    flex:none;width:22px;height:22px;border-radius:5px;
+    font-family:inherit;font-size:14px;line-height:1;
+    border:1px solid transparent;background:transparent;color:#4a5266;
+    cursor:pointer;padding:0;
+  }
+  .track-del:hover{background:#3a1f26;color:#ff9aa2;}
+
+  /* ★ 控制区 —— 每行更宽松 */
+  .track-controls{
+    padding:8px 10px 10px 13px;
+    display:flex;flex-direction:column;gap:7px;
+    flex:1;
+  }
+  .track-row{
+    display:flex;align-items:center;gap:8px;
+  }
+  .track-row label{
+    font-size:10px;font-weight:700;color:#7b859a;
+    flex:none;width:32px;letter-spacing:.03em;
+    text-align:right;
+  }
+  .track-row select{
+    flex:1;min-width:0;
+    font-family:inherit;font-size:11.5px;
+    padding:3px 6px;border-radius:5px;
+    border:1px solid #1f2637;background:#0c1119;color:#b8c2d6;
+    outline:none;cursor:pointer;
+  }
+  .track-row select:focus{border-color:var(--accent);}
+  .track-row input[type=range]{
+    flex:1;min-width:0;height:14px;
+    accent-color:var(--track-color, #4a7dff);
+    cursor:pointer;
+  }
+  .track-row .val{
+    font-size:10px;font-weight:700;color:#8a95ad;
+    flex:none;width:34px;text-align:right;
+    font-family:ui-monospace,Menlo,monospace;
+    background:#0c1119;
+    padding:2px 4px;border-radius:4px;
+    border:1px solid #1f2637;
+  }
+
+  /* AI 面板 */
   .ai-panel{position:fixed;top:0;right:0;bottom:0;width:400px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:200;box-shadow:-24px 0 70px rgba(0,0,0,.6);}
   .ai-panel.open{transform:translateX(0);}
   .ai-header{flex:none;display:flex;align-items:center;gap:9px;padding:13px 15px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#1a1730,#151a26);}
-  .ai-header .ai-dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,#7c5cff,#b18cff);box-shadow:0 0 12px rgba(124,92,255,.9);animation:aiPulse 2s ease-in-out infinite;}
-  @keyframes aiPulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+  .ai-header .ai-dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,#7c5cff,#b18cff);box-shadow:0 0 12px rgba(124,92,255,.9);}
   .ai-header .ai-title{font-size:13px;font-weight:700;}
   .ai-header .ai-sub{font-size:10px;color:var(--muted);margin-left:auto;}
-  .ai-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0 4px;border-radius:6px;transition:color .15s,background .15s;}
+  .ai-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0 4px;border-radius:6px;}
   .ai-close:hover{color:#fff;background:rgba(255,255,255,.08);}
   .ai-settings{flex:none;padding:11px 15px;border-bottom:1px solid var(--line);background:var(--panel2);display:flex;flex-direction:column;gap:8px;}
   .ai-set-row{display:flex;align-items:center;gap:8px;}
   .ai-set-row label{font-size:11px;color:var(--muted);flex:none;width:58px;}
   .ai-set-row input,.ai-set-row select{flex:1;font-family:inherit;font-size:12px;padding:6px 9px;border-radius:7px;border:1px solid var(--line2);background:#0f1219;color:var(--text);outline:none;min-width:0;}
-  .ai-set-row input:focus,.ai-set-row select:focus{border-color:var(--ai);}
   .ai-key-hint{font-size:10px;color:#5d6680;line-height:1.55;}
-  .ai-key-hint a{color:#8a95ad;text-decoration:none;border-bottom:1px dotted #4a5266;}
+  .ai-key-hint a{color:#8a95ad;text-decoration:none;}
   .ai-quick{flex:none;display:flex;gap:6px;flex-wrap:wrap;padding:9px 15px;border-bottom:1px solid var(--line);background:var(--panel2);}
   .ai-quick button{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--line2);background:#151a26;color:#98a3bb;cursor:pointer;transition:all .14s;white-space:nowrap;}
-  .ai-quick button:hover{background:#1f2739;border-color:var(--ai);color:#c0b4ff;}
+  .ai-quick button:hover{background:#1f2739;color:#c0b4ff;}
   .ai-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
-  .ai-msg{max-width:88%;padding:9px 12px;border-radius:11px;font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;animation:msgIn .22s ease;}
-  @keyframes msgIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-  .ai-msg.user{align-self:flex-end;background:linear-gradient(135deg,#4a5fff,#6d7dff);color:#fff;border-bottom-right-radius:3px;box-shadow:0 3px 12px rgba(74,95,255,.3);}
-  .ai-msg.assistant{align-self:flex-start;background:#161b27;color:#cfd6e6;border:1px solid var(--line2);border-bottom-left-radius:3px;}
-  .ai-msg.system{align-self:center;background:transparent;color:#6b7488;font-size:11px;text-align:center;max-width:96%;padding:4px 8px;line-height:1.5;}
+  .ai-msg{max-width:88%;padding:9px 12px;border-radius:11px;font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+  .ai-msg.user{align-self:flex-end;background:linear-gradient(135deg,#4a5fff,#6d7dff);color:#fff;}
+  .ai-msg.assistant{align-self:flex-start;background:#161b27;color:#cfd6e6;border:1px solid var(--line2);}
+  .ai-msg.system{align-self:center;background:transparent;color:#6b7488;font-size:11px;text-align:center;padding:4px 8px;}
   .ai-msg.error{align-self:stretch;max-width:100%;background:#2a161c;color:#ff9aa2;border:1px solid #5c2b34;font-size:11.5px;}
   .ai-msg.thinking{color:#8a95ad;font-style:italic;}
-  .ai-msg.thinking::after{content:'●';animation:dots 1.2s infinite;display:inline-block;margin-left:3px;}
-  @keyframes dots{0%,20%{content:'●';}40%{content:'●●';}60%,100%{content:'●●●';}}
   .ai-applied{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;font-size:10.5px;font-weight:700;color:#7ee0a0;background:rgba(126,224,160,.08);padding:5px 9px;border-radius:8px;border:1px solid rgba(126,224,160,.25);}
-  .ai-applied .tag{background:rgba(126,224,160,.14);padding:1.5px 7px;border-radius:12px;font-weight:700;}
+  .ai-applied .tag{background:rgba(126,224,160,.14);padding:1.5px 7px;border-radius:12px;}
   .ai-input-row{flex:none;padding:11px 13px 13px;border-top:1px solid var(--line);background:var(--panel2);}
   .ai-input-wrap{display:flex;gap:8px;align-items:flex-end;}
   .ai-input-wrap textarea{flex:1;font-family:inherit;font-size:12.5px;padding:9px 11px;border-radius:10px;border:1px solid var(--line2);background:#0f1219;color:var(--text);outline:none;resize:none;min-height:42px;max-height:130px;line-height:1.5;}
-  .ai-input-wrap textarea:focus{border-color:var(--ai);box-shadow:0 0 0 3px rgba(124,92,255,.13);}
-  .ai-send{flex:none;font-family:inherit;font-size:12.5px;font-weight:700;padding:10px 17px;border-radius:10px;border:none;background:linear-gradient(135deg,#6d4bff,#9b6dff);color:#fff;cursor:pointer;transition:opacity .15s,transform .1s;box-shadow:0 4px 14px rgba(124,92,255,.4);}
-  .ai-send:hover{opacity:.92;}
-  .ai-send:active{transform:translateY(1px);}
-  .ai-send:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
-  .ai-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .28s;z-index:199;backdrop-filter:blur(2px);}
+  .ai-send{flex:none;font-family:inherit;font-size:12.5px;font-weight:700;padding:10px 17px;border-radius:10px;border:none;background:linear-gradient(135deg,#6d4bff,#9b6dff);color:#fff;cursor:pointer;}
+  .ai-send:disabled{opacity:.45;cursor:not-allowed;}
+  .ai-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .28s;z-index:199;}
   .ai-backdrop.open{opacity:1;pointer-events:auto;}
 
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);opacity:0;pointer-events:none;transition:opacity .2s;z-index:300;backdrop-filter:blur(3px);}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);opacity:0;pointer-events:none;transition:opacity .2s;z-index:300;}
   .modal-backdrop.open{opacity:1;pointer-events:auto;}
   .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);width:min(500px, calc(100vw - 32px));max-height:min(640px, calc(100vh - 60px));background:var(--panel);border:1px solid var(--line2);border-radius:14px;box-shadow:0 30px 90px rgba(0,0,0,.75);display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:301;overflow:hidden;}
   .modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
   .modal-header{flex:none;display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#111d18,#11141c);}
   .modal-title{font-size:14px;font-weight:700;}
   .modal-sub{font-size:10.5px;color:var(--muted);margin-left:auto;}
-  .modal-close{margin-left:10px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px;border-radius:6px;transition:color .15s,background .15s;}
+  .modal-close{margin-left:10px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px;border-radius:6px;}
   .modal-close:hover{color:#fff;background:rgba(255,255,255,.08);}
   .modal-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;}
   .section-label{font-size:10px;font-weight:700;letter-spacing:.14em;color:#5d6680;text-transform:uppercase;}
   .proj-save-row{display:flex;gap:8px;}
   .proj-save-row input{flex:1;font-family:inherit;font-size:13px;padding:9px 12px;border-radius:9px;border:1px solid var(--line2);background:#0f1219;color:var(--text);outline:none;min-width:0;}
-  .proj-save-row input:focus{border-color:var(--accent);}
   .proj-save-row button{flex:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 18px;border-radius:9px;border:none;background:var(--accent);color:#fff;cursor:pointer;}
-  .proj-save-row button:hover{background:#4d7dff;}
   .proj-list{display:flex;flex-direction:column;gap:8px;max-height:290px;overflow-y:auto;padding:8px;border:1px solid var(--line);border-radius:10px;background:#0c0f16;min-height:96px;}
   .proj-empty{padding:30px 12px;text-align:center;font-size:12px;color:#5d6680;line-height:1.7;}
-  .proj-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#131824;border:1px solid #1c2233;transition:all .14s;}
-  .proj-row:hover{background:#182033;border-color:#2a3550;}
+  .proj-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#131824;border:1px solid #1c2233;}
   .proj-info{flex:1;min-width:0;}
   .proj-row-name{font-size:12.5px;font-weight:700;color:#cfd6e6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .proj-meta{font-size:10.5px;color:#6b7488;margin-top:3px;}
   .proj-actions{display:flex;gap:6px;flex:none;}
-  .proj-mini{font-family:inherit;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;border:1px solid var(--line2);background:#1b2030;color:#cfd6e6;cursor:pointer;transition:all .14s;white-space:nowrap;}
-  .proj-mini:hover{background:#232a3d;border-color:#3a4560;}
-  .proj-mini.danger:hover{background:#3a1f26;border-color:#6b2f38;color:#ff9aa2;}
+  .proj-mini{font-family:inherit;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;border:1px solid var(--line2);background:#1b2030;color:#cfd6e6;cursor:pointer;white-space:nowrap;}
+  .proj-mini.danger:hover{background:#3a1f26;color:#ff9aa2;}
   .proj-file-row{display:flex;gap:8px;}
-  .proj-file-row button{flex:1;font-family:inherit;font-size:12px;padding:9px 12px;border-radius:9px;border:1px solid var(--line2);background:#1b2030;color:#cfd6e6;cursor:pointer;transition:all .14s;}
-  .proj-file-row button:hover{background:#232a3d;border-color:#3a4560;}
+  .proj-file-row button{flex:1;font-family:inherit;font-size:12px;padding:9px 12px;border-radius:9px;border:1px solid var(--line2);background:#1b2030;color:#cfd6e6;cursor:pointer;}
   .proj-note{font-size:10.5px;color:#5d6680;line-height:1.65;padding:8px 11px;background:#0f1219;border-radius:8px;border-left:2px solid #2a4a3a;}
 
-  /* ★ MP3 导出状态浮层 */
-  .mp3-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.62);
-    opacity:0;pointer-events:none;transition:opacity .25s;
-    z-index:400;backdrop-filter:blur(4px);
-    display:flex;align-items:center;justify-content:center;
-  }
+  .mp3-overlay{position:fixed;inset:0;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .25s;z-index:400;display:flex;align-items:center;justify-content:center;}
   .mp3-overlay.open{opacity:1;pointer-events:auto;}
-  .mp3-card{
-    background:var(--panel);
-    border:1px solid var(--line2);
-    border-radius:14px;
-    padding:24px 28px;
-    width:min(360px, calc(100vw - 48px));
-    box-shadow:0 30px 90px rgba(0,0,0,.75);
-    text-align:center;
-    transform:translateY(8px);
-    transition:transform .25s;
-  }
-  .mp3-overlay.open .mp3-card{transform:translateY(0);}
-  .mp3-title{
-    font-size:14px;font-weight:700;margin-bottom:6px;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-  }
-  .mp3-title .spin{
-    width:14px;height:14px;border-radius:50%;
-    border:2px solid rgba(255,184,148,.25);
-    border-top-color:#ffb894;
-    animation:spin 0.9s linear infinite;
-  }
+  .mp3-card{background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:24px 28px;width:min(360px, calc(100vw - 48px));box-shadow:0 30px 90px rgba(0,0,0,.75);text-align:center;}
+  .mp3-title{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .mp3-title .spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,184,148,.25);border-top-color:#ffb894;animation:spin .9s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .mp3-step{font-size:11.5px;color:var(--muted);margin-bottom:14px;line-height:1.55;}
-  .mp3-bar{
-    height:6px;border-radius:6px;background:#1a1f2c;overflow:hidden;margin-bottom:8px;
-  }
-  .mp3-bar-inner{
-    height:100%;width:0%;
-    background:linear-gradient(90deg,#ff8a5c,#ffb894);
-    border-radius:6px;
-    transition:width .2s ease;
-    box-shadow:0 0 12px rgba(255,184,148,.5);
-  }
+  .mp3-bar{height:6px;border-radius:6px;background:#1a1f2c;overflow:hidden;margin-bottom:8px;}
+  .mp3-bar-inner{height:100%;width:0%;background:linear-gradient(90deg,#ff8a5c,#ffb894);border-radius:6px;transition:width .2s ease;}
   .mp3-pct{font-size:11px;color:#8a95ad;font-family:ui-monospace,Menlo,monospace;}
 
   ::-webkit-scrollbar{width:10px;height:10px;}
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:#262c3c;border-radius:6px;border:2px solid var(--bg);}
-  ::-webkit-scrollbar-thumb:hover{background:#35405a;}
 
   @media (max-width:900px){
     .main{flex-direction:column;}
@@ -276,6 +373,10 @@
     .tips,.legend,.chord-info{display:none;}
     .stage{padding:12px;}
     .ai-panel{width:100%;}
+    .trackbar{height:auto;min-height:130px;flex-direction:column;}
+    .trackbar-resizer{display:none;}   /* 窄屏为自适应高度，禁用拖拽 */
+    .trackbar-header{width:100%;border-right:none;border-bottom:1px solid var(--line);flex-direction:row;align-items:center;}
+    .track-card{width:240px;}
   }
 </style>
 </head>
@@ -293,6 +394,7 @@
   <button id="exportMp3Btn" class="btn mp3">🎵 MP3</button>
   <button id="projBtn" class="btn proj">📁 项目</button>
   <div class="spacer"></div>
+  <button id="drumBtn" class="btn drum" title="一键添加 / 更新预设鼓组轨道（基础鼓点，跟随当前拍号与小节数）">🥁 鼓轨</button>
   <button id="randomBtn" class="btn rand">🎲 随机旋律</button>
   <button id="aiBtn" class="btn ai">✨ AI 作曲</button>
   <select id="scaleSelect" class="btn" style="padding:6px 8px;"></select>
@@ -304,7 +406,6 @@
   <label class="field" id="timeSigField">拍号 <select id="timeSigSelect"></select></label>
   <label class="field" id="barsField">小节 <input id="barsInput" type="number" min="1" max="999" value="8"></label>
   <div class="divider"></div>
-  <label class="field" id="timbreField">音色 <select id="timbreSelect"></select></label>
   <label class="field" id="snapField">吸附 <select id="snapSelect">
     <option value="8">1 拍</option>
     <option value="4">1/2 拍</option>
@@ -338,9 +439,13 @@
       <div class="legend-note">高八度加 ● 在上方，升号用 #</div>
     </div>
     <div class="tips">
-      <p><b>MP3</b> 会离线渲染整首曲目并编码下载</p>
-      <p><b>AI 可控制所有参数</b>：BPM、拍号、音色等</p>
-      <p><b>Esc</b> 取消和弦模式 · <b>Ctrl+S</b> 项目</p>
+      <p><b>多轨</b>：底部轨道条切换、增删轨道</p>
+      <p><b>鼓轨</b>：点「🥁 鼓轨」一键生成预设鼓点（按当前拍号，最多 32 小节）</p>
+      <p><b>打击乐</b>：底鼓 / 军鼓 / 踩镲 / 嗵鼓 / 吊镲 / 鼓组</p>
+      <p><b>鼓组映射</b>：C 底鼓 · D 军鼓 · E 踩镲 · F–G 嗵鼓 · A 吊镲</p>
+      <p><b>轨道条高度</b>：拖拽顶部横条上下拉动（双击复位）</p>
+      <p><b>非活动轨</b>音符半透明显示</p>
+      <p><b>空格</b>播放/停止 · <b>Ctrl+Z</b> 撤销</p>
     </div>
   </aside>
 
@@ -365,12 +470,24 @@
   </section>
 </div>
 
+<div class="trackbar" id="trackbar">
+  <div class="trackbar-resizer" id="trackbarResizer" title="拖拽调整轨道区高度（向上变高 / 向下变矮，双击复位）"></div>
+  <div class="trackbar-header">
+    <div class="trackbar-title" id="trackbarTitle" title="点击折叠 / 展开">
+      <span class="arrow">▼</span>
+      <span>轨道</span>
+    </div>
+    <button class="trackbar-add" id="addTrackBtn">+ 添加轨道</button>
+  </div>
+  <div class="track-list" id="trackList"></div>
+</div>
+
 <div class="ai-backdrop" id="aiBackdrop"></div>
 <div class="ai-panel" id="aiPanel">
   <div class="ai-header">
     <div class="ai-dot"></div>
     <div class="ai-title">AI 作曲助手</div>
-    <div class="ai-sub">DeepSeek · 全参数控制</div>
+    <div class="ai-sub">DeepSeek · 多轨</div>
     <button class="ai-close" id="aiClose">×</button>
   </div>
   <div class="ai-settings">
@@ -387,7 +504,7 @@
   <div class="ai-messages" id="aiMessages"></div>
   <div class="ai-input-row">
     <div class="ai-input-wrap">
-      <textarea id="aiInput" rows="2" placeholder="例如：做一段 90 BPM 的 3/4 拍爵士圆舞曲，用钟铃音色"></textarea>
+      <textarea id="aiInput" rows="2" placeholder="例如：写一段欢快的旋律，加上弦乐和弦伴奏"></textarea>
       <button class="ai-send" id="aiSend">发送</button>
     </div>
   </div>
@@ -414,11 +531,10 @@
       <button id="projImportBtn">⬆ 从 .json 导入</button>
     </div>
     <input type="file" id="projFileInput" accept=".json,application/json" style="display:none">
-    <div class="proj-note">项目保存在本机浏览器中，不会上传服务器。建议定期使用"导出为 .json 文件"备份。</div>
+    <div class="proj-note">项目保存在本机浏览器中，不会上传服务器。建议定期备份。</div>
   </div>
 </div>
 
-<!-- ★ MP3 导出浮层 -->
 <div class="mp3-overlay" id="mp3Overlay">
   <div class="mp3-card">
     <div class="mp3-title"><div class="spin"></div><span id="mp3TitleText">正在渲染音频…</span></div>
@@ -432,18 +548,17 @@
 (function(){
 'use strict';
 
-/* =========================================================
-   基础常量
-   ========================================================= */
-const PITCH_LOW  = 60;
-const PITCH_HIGH = 79;
+const PITCH_LOW  = 48;
+const PITCH_HIGH = 84;
 const ROWS       = PITCH_HIGH - PITCH_LOW + 1;
+const SUB        = 8;
+const BASE_BEAT_W= 56;
+const BASE_ROW_H = 20;
+const MAX_BARS   = 999;
+const MAX_TRACKS = 16;
 
-const SUB          = 8;
-const BASE_BEAT_W  = 56;
-const BASE_ROW_H   = 20;
-const MAX_BARS     = 999;
-
+const TRACK_COLORS = ['#4a7dff','#e56ab0','#4fc98a','#e8a33d','#b96ae0','#43c4b8',
+                      '#ef5f6b','#8ccf5a','#5c86e8','#f0784a','#8a6fe8','#c7c94a'];
 const NAMES  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const COLORS = ['#ef5f6b','#f0784a','#e8a33d','#c7c94a','#8ccf5a','#4fc98a',
                 '#43c4b8','#4aa8e0','#5c86e8','#8a6fe8','#b96ae0','#e56ab0'];
@@ -458,12 +573,8 @@ const clamp      = (v,a,b) => v < a ? a : (v > b ? b : v);
 function unitSubs(den){ return 32 / den; }
 function denPow2(den){ return Math.round(Math.log2(den)); }
 
-const TIME_SIG_LIST = [
-  [2,2],[3,2],[4,2],
-  [2,4],[3,4],[4,4],[5,4],[6,4],[7,4],
-  [3,8],[5,8],[6,8],[7,8],[9,8],[11,8],[12,8],
-  [5,16],[7,16]
-];
+const TIME_SIG_LIST = [[2,2],[3,2],[4,2],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],
+  [3,8],[5,8],[6,8],[7,8],[9,8],[11,8],[12,8],[5,16],[7,16]];
 
 const JP_MAP = ['1','#1','2','#2','3','4','#4','5','#5','6','#6','7'];
 
@@ -539,34 +650,50 @@ function durSVG(d, color){
   return '<svg width="28" height="30" viewBox="0 0 28 30">'+s+'</svg>';
 }
 
-const SCALES = {
-  major:  { label:'C 大调',      steps:[0,2,4,5,7,9,11] },
-  minor:  { label:'A 自然小调',   steps:[0,2,3,5,7,8,10] },
-  penta:  { label:'C 五声音阶',   steps:[0,2,4,7,9] },
-  pentaM: { label:'A 小调五声',   steps:[0,3,5,7,10] },
-  blues:  { label:'C 蓝调',      steps:[0,3,5,6,7,10] },
-  dorian: { label:'D 多利亚',     steps:[0,2,3,5,7,9,10] },
-  lydian: { label:'F 利底亚',     steps:[0,2,4,6,7,9,11] },
-  phryg:  { label:'E 弗里吉亚',   steps:[0,1,3,5,7,8,10] },
-  mixo:   { label:'G 混合利底亚', steps:[0,2,4,5,7,9,10] },
-  harm:   { label:'A 和声小调',   steps:[0,2,3,5,7,8,11] }
-};
-
 const TIMBRES = {
-  piano:   { label:'钢琴',   env:{atk:0.006,dec:0.30,sus:0.28,rel:0.14}, oscs:[{t:'triangle',m:1,g:1},{t:'sine',m:2,g:0.26},{t:'sine',m:3,g:0.07}], lp:6200 },
-  epiano:  { label:'电钢',   env:{atk:0.008,dec:0.55,sus:0.40,rel:0.28}, oscs:[{t:'sine',m:1,g:1},{t:'sine',m:2,g:0.22},{t:'sine',m:4,g:0.06}], lp:4200 },
-  organ:   { label:'风琴',   env:{atk:0.02,dec:0.05,sus:0.95,rel:0.10}, oscs:[{t:'sine',m:1,g:1},{t:'sine',m:2,g:0.5},{t:'sine',m:3,g:0.3},{t:'sine',m:4,g:0.16}], lp:5000 },
-  guitar:  { label:'拨弦',   env:{atk:0.003,dec:0.22,sus:0.10,rel:0.10}, oscs:[{t:'sawtooth',m:1,g:1},{t:'square',m:2,g:0.13}], lp:3400 },
-  bass:    { label:'贝斯',   env:{atk:0.008,dec:0.30,sus:0.42,rel:0.16}, oscs:[{t:'square',m:1,g:1},{t:'sine',m:0.5,g:0.5}], lp:1400 },
-  strings: { label:'弦乐',   env:{atk:0.18,dec:0.30,sus:0.78,rel:0.40}, oscs:[{t:'sawtooth',m:1,g:0.55,det:-8},{t:'sawtooth',m:1,g:0.55,det:8}], lp:2800 },
-  brass:   { label:'铜管',   env:{atk:0.05,dec:0.14,sus:0.80,rel:0.16}, oscs:[{t:'sawtooth',m:1,g:1},{t:'square',m:1,g:0.2,det:8}], lp:3600 },
-  flute:   { label:'长笛',   env:{atk:0.06,dec:0.10,sus:0.85,rel:0.18}, oscs:[{t:'sine',m:1,g:1},{t:'sine',m:2,g:0.10}], lp:5200 },
-  clarinet:{ label:'单簧管', env:{atk:0.05,dec:0.12,sus:0.82,rel:0.16}, oscs:[{t:'square',m:1,g:0.6},{t:'sine',m:3,g:0.28}], lp:2400 },
-  bell:    { label:'钟铃',   env:{atk:0.004,dec:1.10,sus:0.08,rel:0.55}, oscs:[{t:'sine',m:1,g:1},{t:'sine',m:2.76,g:0.30},{t:'sine',m:5.4,g:0.09}], lp:9000 },
-  marimba: { label:'马林巴', env:{atk:0.003,dec:0.42,sus:0.05,rel:0.22}, oscs:[{t:'sine',m:1,g:1},{t:'sine',m:4,g:0.22},{t:'sine',m:9.2,g:0.05}], lp:6400 },
-  pad:     { label:'氛围',   env:{atk:0.20,dec:0.35,sus:0.72,rel:0.60}, oscs:[{t:'sawtooth',m:1,g:0.5,det:-9},{t:'sawtooth',m:1,g:0.5,det:9},{t:'sine',m:2,g:0.14}], lp:2500 },
-  synth:   { label:'合成器', env:{atk:0.01,dec:0.20,sus:0.60,rel:0.20}, oscs:[{t:'sawtooth',m:1,g:0.8},{t:'square',m:1.005,g:0.4}], lp:3000 },
-  choir:   { label:'人声',   env:{atk:0.14,dec:0.28,sus:0.80,rel:0.45}, oscs:[{t:'sine',m:1,g:1},{t:'sine',m:2,g:0.20},{t:'sine',m:3,g:0.10}], lp:3400 }
+  piano:   { label:'钢琴', env:{atk:0.004,dec:0.55,sus:0.20,rel:0.35}, fenv:{base:260,peak:6200,q:0.8,atk:0.004,dec:0.40,sus:0.22,rel:0.32}, oscs:[{t:'triangle',m:1,g:1.00,det:0},{t:'sine',m:2,g:0.30,det:3},{t:'sine',m:3,g:0.09,det:-3},{t:'triangle',m:4,g:0.05,det:5}], reverb:0.24 },
+  epiano:  { label:'电钢', env:{atk:0.008,dec:0.70,sus:0.32,rel:0.50}, fenv:{base:380,peak:4400,q:0.7,atk:0.006,dec:0.60,sus:0.30,rel:0.42}, oscs:[{t:'sine',m:1,g:1.00,det:0},{t:'sine',m:2,g:0.38,det:4},{t:'sine',m:4,g:0.11,det:-3},{t:'sine',m:7,g:0.045,det:6}], reverb:0.36 },
+  organ:   { label:'风琴', env:{atk:0.015,dec:0.05,sus:0.95,rel:0.10}, fenv:{base:450,peak:5000,q:0.5,atk:0.020,dec:0.10,sus:0.90,rel:0.10}, oscs:[{t:'sine',m:1,g:1.00,det:0},{t:'sine',m:2,g:0.48,det:0},{t:'sine',m:3,g:0.32,det:0},{t:'sine',m:4,g:0.18,det:0},{t:'sine',m:6,g:0.09,det:0}], reverb:0.42 },
+  guitar:  { label:'拨弦', env:{atk:0.002,dec:0.30,sus:0.08,rel:0.20}, fenv:{base:340,peak:3800,q:1.4,atk:0.002,dec:0.25,sus:0.10,rel:0.20}, oscs:[{t:'sawtooth',m:1,g:0.75,det:0},{t:'sawtooth',m:1,g:0.75,det:7},{t:'square',m:2,g:0.10,det:-4},{t:'sine',m:3,g:0.05,det:0}], reverb:0.22 },
+  bass:    { label:'贝斯', env:{atk:0.006,dec:0.35,sus:0.42,rel:0.16}, fenv:{base:140,peak:1600,q:1.2,atk:0.005,dec:0.30,sus:0.30,rel:0.18}, oscs:[{t:'square',m:1,g:0.85,det:0},{t:'sine',m:0.5,g:0.55,det:0},{t:'triangle',m:2,g:0.15,det:0}], reverb:0.12 },
+  strings: { label:'弦乐', env:{atk:0.20,dec:0.30,sus:0.78,rel:0.45}, fenv:{base:420,peak:3400,q:0.6,atk:0.18,dec:0.30,sus:0.70,rel:0.42}, oscs:[{t:'sawtooth',m:1,g:0.60,det:-8},{t:'sawtooth',m:1,g:0.60,det:8},{t:'sawtooth',m:1,g:0.35,det:0},{t:'sine',m:2,g:0.09,det:0}], reverb:0.52 },
+  brass:   { label:'铜管', env:{atk:0.05,dec:0.15,sus:0.82,rel:0.18}, fenv:{base:520,peak:4000,q:1.0,atk:0.05,dec:0.15,sus:0.75,rel:0.18}, oscs:[{t:'sawtooth',m:1,g:0.85,det:0},{t:'sawtooth',m:1,g:0.55,det:6},{t:'square',m:1,g:0.15,det:-5},{t:'sine',m:2,g:0.12,det:0}], reverb:0.30 },
+  flute:   { label:'长笛', env:{atk:0.06,dec:0.10,sus:0.88,rel:0.22}, fenv:{base:900,peak:5000,q:0.7,atk:0.06,dec:0.12,sus:0.85,rel:0.22}, oscs:[{t:'sine',m:1,g:1.00,det:0},{t:'sine',m:2,g:0.10,det:2},{t:'triangle',m:1,g:0.15,det:-3}], reverb:0.34 },
+  clarinet:{ label:'单簧管', env:{atk:0.05,dec:0.12,sus:0.84,rel:0.18}, fenv:{base:480,peak:2600,q:1.4,atk:0.05,dec:0.12,sus:0.80,rel:0.18}, oscs:[{t:'square',m:1,g:0.55,det:0},{t:'sine',m:3,g:0.30,det:0},{t:'sine',m:5,g:0.08,det:0}], reverb:0.28 },
+  bell:    { label:'钟铃', env:{atk:0.003,dec:1.20,sus:0.06,rel:0.60}, fenv:{base:1200,peak:9000,q:0.5,atk:0.003,dec:1.0,sus:0.10,rel:0.55}, oscs:[{t:'sine',m:1,g:1.00,det:0},{t:'sine',m:2.76,g:0.32,det:0},{t:'sine',m:5.4,g:0.11,det:0},{t:'sine',m:8.9,g:0.04,det:0}], reverb:0.58 },
+  marimba: { label:'马林巴', env:{atk:0.002,dec:0.45,sus:0.04,rel:0.25}, fenv:{base:600,peak:6500,q:0.9,atk:0.002,dec:0.35,sus:0.06,rel:0.22}, oscs:[{t:'sine',m:1,g:1.00,det:0},{t:'sine',m:4,g:0.22,det:0},{t:'sine',m:9.2,g:0.06,det:0}], reverb:0.30 },
+  pad:     { label:'氛围', env:{atk:0.24,dec:0.40,sus:0.75,rel:0.70}, fenv:{base:380,peak:2800,q:0.5,atk:0.22,dec:0.35,sus:0.70,rel:0.60}, oscs:[{t:'sawtooth',m:1,g:0.50,det:-9},{t:'sawtooth',m:1,g:0.50,det:9},{t:'sine',m:2,g:0.14,det:0},{t:'triangle',m:3,g:0.06,det:0}], reverb:0.68 },
+  synth:   { label:'合成器', env:{atk:0.008,dec:0.24,sus:0.58,rel:0.24}, fenv:{base:500,peak:4200,q:1.6,atk:0.008,dec:0.20,sus:0.50,rel:0.24}, oscs:[{t:'sawtooth',m:1,g:0.7,det:0},{t:'square',m:1.005,g:0.35,det:0},{t:'sawtooth',m:2,g:0.12,det:5}], reverb:0.34 },
+  choir:   { label:'人声', env:{atk:0.16,dec:0.30,sus:0.80,rel:0.50}, fenv:{base:520,peak:3600,q:0.7,atk:0.14,dec:0.28,sus:0.78,rel:0.46}, oscs:[{t:'sine',m:1,g:0.9,det:0},{t:'sine',m:2,g:0.22,det:4},{t:'sine',m:3,g:0.10,det:-3},{t:'triangle',m:4,g:0.05,det:0}], reverb:0.52 },
+
+  /* ★ 打击乐 —— perc:true 表示跳过全局低通，靠每源滤波塑形；
+     源支持 t:'noise'（白噪声）、glide（音高下坠）、f（每源滤波） */
+  kick:    { label:'底鼓', perc:true, env:{atk:0.001,dec:0.22,sus:0.0001,rel:0.03}, fenv:{base:200,peak:2400,q:0.7,atk:0.001,dec:0.16,sus:0.05,rel:0.03}, oscs:[
+             {t:'sine',     m:0.32, g:1.00, det:0, glide:{from:3.2, time:0.06}},
+             {t:'triangle', m:0.32, g:0.22, det:0, glide:{from:3.0, time:0.05}, f:{t:'lowpass', f:900, q:0.7}}
+           ], reverb:0.10 },
+  snare:   { label:'军鼓', perc:true, env:{atk:0.001,dec:0.20,sus:0.0001,rel:0.03}, fenv:{base:900,peak:6000,q:0.8,atk:0.001,dec:0.16,sus:0.05,rel:0.03}, oscs:[
+             {t:'triangle', m:0.75, g:0.34, det:0, glide:{from:1.8, time:0.03}},
+             {t:'noise',    g:0.55, f:{t:'bandpass', f:2400, q:0.7}},
+             {t:'noise',    g:0.30, f:{t:'highpass', f:5200, q:0.7}}
+           ], reverb:0.22 },
+  hihat:   { label:'踩镲', perc:true, env:{atk:0.001,dec:0.07,sus:0.0001,rel:0.02}, fenv:{base:7000,peak:15000,q:0.5,atk:0.001,dec:0.06,sus:0.20,rel:0.02}, oscs:[
+             {t:'noise', g:0.50, f:{t:'highpass', f:7200, q:0.8}},
+             {t:'noise', g:0.28, f:{t:'bandpass', f:10500, q:1.3}}
+           ], reverb:0.14 },
+  tom:     { label:'嗵鼓', perc:true, env:{atk:0.001,dec:0.34,sus:0.0001,rel:0.04}, fenv:{base:260,peak:2800,q:0.8,atk:0.001,dec:0.24,sus:0.05,rel:0.04}, oscs:[
+             {t:'sine',  m:0.55, g:1.00, det:0, glide:{from:1.9, time:0.14}},
+             {t:'noise', g:0.09, f:{t:'bandpass', f:1900, q:1.0}}
+           ], reverb:0.26 },
+  crash:   { label:'吊镲', perc:true, env:{atk:0.002,dec:1.10,sus:0.0001,rel:0.25}, fenv:{base:8000,peak:16000,q:0.4,atk:0.002,dec:0.90,sus:0.30,rel:0.20}, oscs:[
+             {t:'noise', g:0.40, f:{t:'highpass', f:5000, q:0.6}},
+             {t:'noise', g:0.22, f:{t:'bandpass', f:8600, q:0.8}}
+           ], reverb:0.46 },
+  drumkit: { label:'鼓组', perc:true, reverb:0.18,
+             map:['kick','kick','snare','snare','hihat','tom','tom','tom','hihat','crash','crash','hihat'],
+             env:{atk:0.001,dec:0.22,sus:0.0001,rel:0.03}, fenv:{base:200,peak:2400,q:0.7,atk:0.001,dec:0.16,sus:0.05,rel:0.03}, oscs:[
+               {t:'sine', m:0.32, g:1.00, det:0, glide:{from:3.2, time:0.06}}
+             ] }
 };
 
 const CHORDS = [
@@ -588,6 +715,19 @@ const CHORDS = [
 ];
 const CHORD_BY_ID = {};
 CHORDS.forEach(c => CHORD_BY_ID[c.id] = c);
+
+const SCALES = {
+  major:  { label:'C 大调',      steps:[0,2,4,5,7,9,11] },
+  minor:  { label:'A 自然小调',   steps:[0,2,3,5,7,8,10] },
+  penta:  { label:'C 五声音阶',   steps:[0,2,4,7,9] },
+  pentaM: { label:'A 小调五声',   steps:[0,3,5,7,10] },
+  blues:  { label:'C 蓝调',      steps:[0,3,5,6,7,10] },
+  dorian: { label:'D 多利亚',     steps:[0,2,3,5,7,9,10] },
+  lydian: { label:'F 利底亚',     steps:[0,2,4,6,7,9,11] },
+  phryg:  { label:'E 弗里吉亚',   steps:[0,1,3,5,7,8,10] },
+  mixo:   { label:'G 混合利底亚', steps:[0,2,4,5,7,9,10] },
+  harm:   { label:'A 和声小调',   steps:[0,2,3,5,7,8,11] }
+};
 
 function fitChord(root, intervals){
   root = clamp(root, PITCH_LOW, PITCH_HIGH);
@@ -624,14 +764,23 @@ function detectChord(pitches){
 }
 
 const S = {
-  notes: [], nextId: 1, bars: 8, timeNum: 4, timeDen: 4,
+  notes: [], nextId: 1,
+  tracks: [], nextTrackId: 1, activeTrackId: null,
+  bars: 8, timeNum: 4, timeDen: 4,
   zoom: 1, bpm: 120, loop: true, metronome: false,
-  timbre: 'piano', scale: 'major', curDur: 'q', snap: 2, showJianpu: true
+  scale: 'major', curDur: 'q', snap: 2, showJianpu: true
 };
 
 let beatW = BASE_BEAT_W, subW = BASE_BEAT_W / SUB, rowH = BASE_ROW_H;
 let playheadSub = 0;
 let chordMode = null;
+
+let audioCtx = null;
+let audioGraph = null;
+const activeSources = new Set();
+let playState = null;
+let schedulerTimer = null;
+let rafId = null;
 
 const subPerBar = () => S.timeNum * unitSubs(S.timeDen);
 const unitSub   = () => unitSubs(S.timeDen);
@@ -644,9 +793,6 @@ function updateMetrics(){
   rowH  = Math.max(9, Math.round(BASE_ROW_H * S.zoom));
 }
 
-/* =========================================================
-   DOM
-   ========================================================= */
 const $ = id => document.getElementById(id);
 const stageEl      = $('stage');
 const pianoKeysEl  = $('pianoKeys');
@@ -662,34 +808,29 @@ const chipsEl      = $('chips');
 const chordGridEl  = $('chordGrid');
 const chordHintEl  = $('chordHint');
 const chordInfoValue = $('chordInfoValue');
-
+const trackbar     = $('trackbar');
+const trackListEl  = $('trackList');
+const trackbarTitle= $('trackbarTitle');
+const addTrackBtn  = $('addTrackBtn');
 const playBtn = $('playBtn'), stopBtn = $('stopBtn'), rewindBtn = $('rewindBtn');
 const undoBtn = $('undoBtn'), clearBtn = $('clearBtn');
 const exportBtn = $('exportBtn'), exportMp3Btn = $('exportMp3Btn'), projBtn = $('projBtn');
 const randomBtn = $('randomBtn'), aiBtn = $('aiBtn'), scaleSelect = $('scaleSelect');
-
+const drumBtn = $('drumBtn');
 const bpmInput = $('bpmInput'), timeSigSel = $('timeSigSelect'), barsInput = $('barsInput');
-const timbreSel = $('timbreSelect'), snapSelect = $('snapSelect'), jpToggle = $('jpToggle');
+const snapSelect = $('snapSelect'), jpToggle = $('jpToggle');
 const zoomRange = $('zoomRange'), zoomLabel = $('zoomLabel');
 const metroInput = $('metroInput'), loopInput = $('loopInput');
-
 const bpmField = $('bpmField'), timeSigField = $('timeSigField'), barsField = $('barsField');
-const timbreField = $('timbreField'), snapField = $('snapField'), zoomField = $('zoomField');
-
+const snapField = $('snapField'), zoomField = $('zoomField');
 const aiPanel = $('aiPanel'), aiBackdrop = $('aiBackdrop'), aiClose = $('aiClose');
 const aiKey = $('aiKey'), aiModel = $('aiModel'), aiMessages = $('aiMessages');
 const aiInput = $('aiInput'), aiSend = $('aiSend'), aiQuick = $('aiQuick');
-
 const projModal = $('projModal'), projBackdrop = $('projBackdrop'), projClose = $('projClose');
 const projName = $('projName'), projSaveBtn = $('projSaveBtn'), projList = $('projList');
 const projExportBtn = $('projExportBtn'), projImportBtn = $('projImportBtn'), projFileInput = $('projFileInput');
-
-/* ★ MP3 浮层 */
-const mp3Overlay = $('mp3Overlay');
-const mp3TitleText = $('mp3TitleText');
-const mp3Step = $('mp3Step');
-const mp3BarInner = $('mp3BarInner');
-const mp3Pct = $('mp3Pct');
+const mp3Overlay = $('mp3Overlay'), mp3TitleText = $('mp3TitleText'), mp3Step = $('mp3Step');
+const mp3BarInner = $('mp3BarInner'), mp3Pct = $('mp3Pct');
 
 function setPlayhead(sub, show){
   playheadSub = clamp(sub, 0, totalSub());
@@ -705,22 +846,41 @@ function setPlayhead(sub, show){
   }
 }
 
-/* =========================================================
-   初始化控件
-   ========================================================= */
+function createTrack(name, timbre, colorIdx){
+  const id = S.nextTrackId++;
+  const tm = TIMBRES[timbre] || TIMBRES.piano;
+  return {
+    id: id,
+    name: name || ('轨道 ' + id),
+    timbre: timbre || 'piano',
+    volume: 0.8, pan: 0, reverb: tm.reverb,
+    mute: false, solo: false,
+    color: TRACK_COLORS[colorIdx % TRACK_COLORS.length]
+  };
+}
+function getTrack(id){
+  for(let i=0;i<S.tracks.length;i++) if(S.tracks[i].id === id) return S.tracks[i];
+  return null;
+}
+function getActiveTrack(){
+  return getTrack(S.activeTrackId) || S.tracks[0] || null;
+}
+function hasSolo(){
+  for(let i=0;i<S.tracks.length;i++) if(S.tracks[i].solo) return true;
+  return false;
+}
+function isTrackAudible(t){
+  if(!t || t.mute) return false;
+  if(hasSolo() && !t.solo) return false;
+  return true;
+}
+
 Object.keys(SCALES).forEach(k=>{
   const o=document.createElement('option');
   o.value=k; o.textContent=SCALES[k].label;
   scaleSelect.appendChild(o);
 });
 scaleSelect.value = S.scale;
-
-Object.keys(TIMBRES).forEach(k=>{
-  const o=document.createElement('option');
-  o.value=k; o.textContent=TIMBRES[k].label;
-  timbreSel.appendChild(o);
-});
-timbreSel.value = S.timbre;
 
 TIME_SIG_LIST.forEach(pair=>{
   const o=document.createElement('option');
@@ -748,20 +908,22 @@ durGridEl.addEventListener('click',function(e){
   });
 });
 
-const CHIP_PITCHES = [60,61,62,63,64,65,66,67,68,69,70,71,72];
+const CHIP_PITCHES = [];
+for(let p = PITCH_LOW; p <= PITCH_HIGH; p++){
+  if(!isBlack(p)) CHIP_PITCHES.push(p);
+}
 CHIP_PITCHES.forEach(p=>{
   const chip=document.createElement('div');
   const black=isBlack(p);
   chip.className='chip'+(black?' black':'');
   chip.dataset.pitch=p;
   chip.innerHTML = '<span style="display:flex;flex-direction:column;align-items:center;gap:0;line-height:1;">'+
-                   '<span style="font-size:11.5px;font-weight:900;">'+noteName(p)+'</span>'+
-                   '<span style="font-size:8.5px;font-weight:700;opacity:.7;margin-top:1px;">'+jianpuText(p)+'</span>'+
+                   '<span style="font-size:10px;font-weight:900;">'+noteName(p)+'</span>'+
+                   '<span style="font-size:8px;font-weight:700;opacity:.7;margin-top:1px;">'+jianpuText(p)+'</span>'+
                    '</span>';
-  chip.style.background = black ? '#1a1f2c' : noteColor(p);
-  if(black){
-    chip.style.border='1px solid '+noteColor(p);
-    chip.style.boxShadow='inset 0 -2px 0 rgba(0,0,0,.4), inset 0 0 0 1px '+noteColor(p)+'55';
+  chip.style.background = noteColor(p);
+  if(p < 60 || p > 72){
+    chip.style.opacity = '0.85';
   }
   chipsEl.appendChild(chip);
 });
@@ -795,6 +957,338 @@ chordGridEl.addEventListener('click', function(e){
   chordHintEl.classList.add('active');
   document.body.classList.add('chord-mode');
   hidePreview();
+});
+
+/* ★ 轨道 UI —— 简化布局，保证所有控件完整显示 */
+function renderTracks(){
+  trackListEl.innerHTML = '';
+  S.tracks.forEach(track => {
+    const card = document.createElement('div');
+    card.className = 'track-card' + (track.id === S.activeTrackId ? ' active' : '') + (track.mute ? ' muted' : '');
+    card.style.setProperty('--track-color', track.color);
+    card.dataset.trackId = track.id;
+
+    // === 头部：名称 + M / S / × ===
+    const header = document.createElement('div');
+    header.className = 'track-header';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'track-name';
+    nameEl.textContent = track.name;
+    nameEl.title = '双击重命名';
+    nameEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      startRenameTrack(track, nameEl);
+    });
+
+    const muteBtn = document.createElement('button');
+    muteBtn.className = 'track-mute' + (track.mute ? ' on' : '');
+    muteBtn.textContent = 'M';
+    muteBtn.title = '静音';
+    muteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      track.mute = !track.mute;
+      renderTracks();
+    });
+
+    const soloBtn = document.createElement('button');
+    soloBtn.className = 'track-solo' + (track.solo ? ' on' : '');
+    soloBtn.textContent = 'S';
+    soloBtn.title = '独奏';
+    soloBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      track.solo = !track.solo;
+      renderTracks();
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'track-del';
+    delBtn.textContent = '×';
+    delBtn.title = '删除轨道';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteTrack(track.id);
+    });
+
+    header.appendChild(nameEl);
+    header.appendChild(muteBtn);
+    header.appendChild(soloBtn);
+    header.appendChild(delBtn);
+
+    // === 控制区：音色 / 音量 / 声像 ===
+    const ctrls = document.createElement('div');
+    ctrls.className = 'track-controls';
+
+    // 音色行
+    const row1 = document.createElement('div');
+    row1.className = 'track-row';
+    const lab1 = document.createElement('label');
+    lab1.textContent = '音色';
+    const sel = document.createElement('select');
+    Object.keys(TIMBRES).forEach(k => {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = TIMBRES[k].label;
+      sel.appendChild(o);
+    });
+    sel.value = track.timbre;
+    sel.addEventListener('change', (e) => {
+      e.stopPropagation();
+      track.timbre = sel.value;
+      track.reverb = TIMBRES[track.timbre].reverb;
+      updateTrackAudio(track.id);
+    });
+    row1.appendChild(lab1);
+    row1.appendChild(sel);
+
+    // 音量行
+    const row2 = document.createElement('div');
+    row2.className = 'track-row';
+    const lab2 = document.createElement('label');
+    lab2.textContent = '音量';
+    const volRange = document.createElement('input');
+    volRange.type = 'range'; volRange.min = '0'; volRange.max = '1'; volRange.step = '0.01';
+    volRange.value = String(track.volume);
+    const volVal = document.createElement('span');
+    volVal.className = 'val';
+    volVal.textContent = Math.round(track.volume * 100);
+    volRange.addEventListener('input', (e) => {
+      e.stopPropagation();
+      track.volume = parseFloat(volRange.value);
+      volVal.textContent = Math.round(track.volume * 100);
+      updateTrackAudio(track.id);
+    });
+    row2.appendChild(lab2);
+    row2.appendChild(volRange);
+    row2.appendChild(volVal);
+
+    // 声像行
+    const row3 = document.createElement('div');
+    row3.className = 'track-row';
+    const lab3 = document.createElement('label');
+    lab3.textContent = '声像';
+    const panRange = document.createElement('input');
+    panRange.type = 'range'; panRange.min = '-1'; panRange.max = '1'; panRange.step = '0.05';
+    panRange.value = String(track.pan);
+    const panVal = document.createElement('span');
+    panVal.className = 'val';
+    panVal.textContent = track.pan > 0 ? 'R' + Math.round(track.pan * 100) :
+                         track.pan < 0 ? 'L' + Math.round(-track.pan * 100) : 'C';
+    panRange.addEventListener('input', (e) => {
+      e.stopPropagation();
+      track.pan = parseFloat(panRange.value);
+      panVal.textContent = track.pan > 0 ? 'R' + Math.round(track.pan * 100) :
+                           track.pan < 0 ? 'L' + Math.round(-track.pan * 100) : 'C';
+      updateTrackAudio(track.id);
+    });
+    row3.appendChild(lab3);
+    row3.appendChild(panRange);
+    row3.appendChild(panVal);
+
+    // 混响行（新增，让"混响"参数也能调整）
+    const row4 = document.createElement('div');
+    row4.className = 'track-row';
+    const lab4 = document.createElement('label');
+    lab4.textContent = '混响';
+    const revRange = document.createElement('input');
+    revRange.type = 'range'; revRange.min = '0'; revRange.max = '1'; revRange.step = '0.02';
+    revRange.value = String(track.reverb);
+    const revVal = document.createElement('span');
+    revVal.className = 'val';
+    revVal.textContent = Math.round(track.reverb * 100);
+    revRange.addEventListener('input', (e) => {
+      e.stopPropagation();
+      track.reverb = parseFloat(revRange.value);
+      revVal.textContent = Math.round(track.reverb * 100);
+      updateTrackAudio(track.id);
+    });
+    row4.appendChild(lab4);
+    row4.appendChild(revRange);
+    row4.appendChild(revVal);
+
+    ctrls.appendChild(row1);
+    ctrls.appendChild(row2);
+    ctrls.appendChild(row3);
+    ctrls.appendChild(row4);
+
+    card.appendChild(header);
+    card.appendChild(ctrls);
+
+    card.addEventListener('click', () => {
+      if(S.activeTrackId !== track.id){
+        S.activeTrackId = track.id;
+        renderTracks();
+        renderNotes();
+      }
+    });
+
+    trackListEl.appendChild(card);
+  });
+}
+
+function startRenameTrack(track, nameEl){
+  const input = document.createElement('input');
+  input.className = 'track-name-input';
+  input.value = track.name;
+  input.maxLength = 24;
+  nameEl.parentNode.replaceChild(input, nameEl);
+  input.focus();
+  input.select();
+
+  const finish = (ok) => {
+    if(ok){
+      const v = input.value.trim();
+      if(v) track.name = v;
+    }
+    renderTracks();
+  };
+  input.addEventListener('blur', () => finish(true));
+  input.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if(e.key === 'Enter'){ input.blur(); }
+    else if(e.key === 'Escape'){ finish(false); }
+  });
+}
+
+function addTrack(){
+  if(S.tracks.length >= MAX_TRACKS){
+    alert('已达到轨道数量上限（' + MAX_TRACKS + '）');
+    return;
+  }
+  const t = createTrack(null, 'piano', S.tracks.length);
+  S.tracks.push(t);
+  S.activeTrackId = t.id;
+  renderTracks();
+  renderNotes();
+}
+
+function deleteTrack(trackId){
+  if(S.tracks.length <= 1){
+    alert('至少保留一个轨道');
+    return;
+  }
+  const track = getTrack(trackId);
+  if(!track) return;
+  const noteCount = S.notes.filter(n => n.trackId === trackId).length;
+  const msg = noteCount > 0
+    ? '删除轨道「' + track.name + '」及其 ' + noteCount + ' 个音符？'
+    : '删除轨道「' + track.name + '」？';
+  if(!confirm(msg)) return;
+
+  const before = snapshotAll();
+  S.tracks = S.tracks.filter(t => t.id !== trackId);
+  S.notes = S.notes.filter(n => n.trackId !== trackId);
+  if(S.activeTrackId === trackId) S.activeTrackId = S.tracks[0].id;
+
+  if(audioGraph && audioGraph.trackNodes[trackId]){
+    const n = audioGraph.trackNodes[trackId];
+    try{ n.gain.disconnect(); n.pan.disconnect(); n.reverbSend.disconnect(); }catch(e){}
+    delete audioGraph.trackNodes[trackId];
+  }
+  renderTracks();
+  renderNotes();
+  commitAction(before);
+}
+
+addTrackBtn.addEventListener('click', addTrack);
+
+/* ★ 轨道条高度：向上 / 向下拖拽调整，双击复位，宽度太窄时禁用 */
+const trackbarResizer = $('trackbarResizer');
+const TRACKBAR_H_KEY = 'melodygrid.trackbarH';
+const TRACKBAR_DEFAULT_H = 150;
+const TRACKBAR_MIN_H = 92;          // 低于此高度视为收起
+const TRACKBAR_COLLAPSED_H = 34;
+let trackbarExpandedH = TRACKBAR_DEFAULT_H;   // 记忆展开高度
+
+function maxTrackbarH(){
+  return Math.max(TRACKBAR_MIN_H + 60, Math.min(560, Math.round(window.innerHeight * 0.72)));
+}
+function clampTrackbarH(h){
+  const v = isFinite(h) ? Math.round(h) : TRACKBAR_DEFAULT_H;
+  return clamp(v, TRACKBAR_COLLAPSED_H, maxTrackbarH());
+}
+function setTrackbarHeight(h, persist){
+  const v = clampTrackbarH(h);
+  trackbar.style.setProperty('--trackbar-h', v + 'px');
+  if(v >= TRACKBAR_MIN_H){
+    trackbarExpandedH = v;
+    trackbar.classList.remove('collapsed');
+  }else{
+    trackbar.classList.add('collapsed');
+  }
+  if(persist){
+    try{ localStorage.setItem(TRACKBAR_H_KEY, String(v)); }catch(e){}
+  }
+  return v;
+}
+
+trackbarTitle.addEventListener('click', function(){
+  if(trackbar.classList.contains('collapsed')) setTrackbarHeight(trackbarExpandedH, true);
+  else setTrackbarHeight(TRACKBAR_COLLAPSED_H, true);
+});
+
+(function initTrackbarResize(){
+  let dragging = false, startY = 0, startH = 0, pointerId = null;
+
+  trackbarResizer.addEventListener('pointerdown', function(e){
+    if(e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    dragging = true;
+    startY = e.clientY;
+    startH = trackbar.getBoundingClientRect().height;
+    pointerId = e.pointerId;
+    try{ trackbarResizer.setPointerCapture(pointerId); }catch(err){}
+    trackbarResizer.classList.add('active');
+    trackbar.classList.add('resizing');
+    document.body.classList.add('resizing');
+    trackbar.classList.remove('collapsed');        // 拖动即展开，高度由指针决定
+    trackbar.style.setProperty('--trackbar-h', clampTrackbarH(startH) + 'px');
+  });
+
+  trackbarResizer.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    // 向上拖（clientY 变小）变高，向下拖变矮
+    const h = clampTrackbarH(startH - (e.clientY - startY));
+    trackbar.style.setProperty('--trackbar-h', h + 'px');
+  });
+
+  function endDrag(e){
+    if(!dragging) return;
+    dragging = false;
+    if(pointerId !== null){
+      try{ trackbarResizer.releasePointerCapture(pointerId); }catch(err){}
+      pointerId = null;
+    }
+    trackbarResizer.classList.remove('active');
+    trackbar.classList.remove('resizing');
+    document.body.classList.remove('resizing');
+    const cur = trackbar.getBoundingClientRect().height;
+    setTrackbarHeight(cur < TRACKBAR_MIN_H ? TRACKBAR_COLLAPSED_H : cur, true);
+  }
+  trackbarResizer.addEventListener('pointerup', endDrag);
+  trackbarResizer.addEventListener('pointercancel', endDrag);
+
+  trackbarResizer.addEventListener('dblclick', function(e){
+    e.preventDefault();
+    setTrackbarHeight(TRACKBAR_DEFAULT_H, true);
+  });
+
+  // 恢复上次高度
+  let saved = NaN;
+  try{ saved = parseFloat(localStorage.getItem(TRACKBAR_H_KEY)); }catch(err){}
+  if(isFinite(saved) && saved > 0){
+    if(saved <= TRACKBAR_COLLAPSED_H + 2){
+      trackbarExpandedH = TRACKBAR_DEFAULT_H;
+      trackbar.style.setProperty('--trackbar-h', TRACKBAR_DEFAULT_H + 'px');
+      trackbar.classList.add('collapsed');
+    }else{
+      setTrackbarHeight(saved, false);
+    }
+  }
+})();
+
+window.addEventListener('resize', function(){
+  if(trackbar.classList.contains('collapsed')) return;
+  setTrackbarHeight(trackbarExpandedH, false);
 });
 
 function rebuildRows(){
@@ -856,14 +1350,13 @@ function labelHTML(pitch){
   if(S.showJianpu) return jianpuHTML(pitch);
   return '<span class="name-label">'+noteName(pitch)+'</span>';
 }
-
 function refreshNoteLabel(el, n){
   const label = el.querySelector('.note-label');
   if(!label) return;
   label.innerHTML = labelHTML(n.pitch);
-  el.title = noteName(n.pitch) + ' · 简谱 ' + jianpuText(n.pitch) + ' · ' + durName(n.length);
+  const track = getTrack(n.trackId);
+  el.title = noteName(n.pitch) + ' · ' + durName(n.length) + (track ? ' · ' + track.name : '');
 }
-
 function positionNoteEl(el,n){
   const w = Math.max(3, n.length*subW - 2);
   const h = Math.max(5, rowH - 3);
@@ -874,11 +1367,11 @@ function positionNoteEl(el,n){
   el.style.background = noteColor(n.pitch);
   el.classList.toggle('tiny', w < 15);
 }
-
 function createNoteEl(n){
   const el=document.createElement('div');
   el.className='note';
   el.dataset.id=n.id;
+  if(n.trackId !== S.activeTrackId) el.classList.add('other-track');
   const label=document.createElement('span');
   label.className='note-label';
   label.innerHTML = labelHTML(n.pitch);
@@ -890,7 +1383,6 @@ function createNoteEl(n){
   refreshNoteLabel(el,n);
   return el;
 }
-
 function renderNotes(){
   noteLayer.innerHTML='';
   const frag=document.createDocumentFragment();
@@ -898,7 +1390,6 @@ function renderNotes(){
   noteLayer.appendChild(frag);
   ensureCapacity(contentEnd() + unitSub());
 }
-
 function ensureCapacity(neededSubs){
   const sBar = subPerBar();
   const needBars = Math.ceil(neededSubs / sBar);
@@ -908,7 +1399,6 @@ function ensureCapacity(neededSubs){
     rebuildTimeline();
   }
 }
-
 function setBars(n){
   n = clamp(Math.round(n)||1, 1, MAX_BARS);
   const need = Math.ceil(contentEnd() / subPerBar()) || 1;
@@ -916,7 +1406,6 @@ function setBars(n){
   barsInput.value = S.bars;
   rebuildTimeline();
 }
-
 function syncTimeSigSelect(){
   const v = S.timeNum + '/' + S.timeDen;
   let found = false;
@@ -930,36 +1419,30 @@ function syncTimeSigSelect(){
   }
   timeSigSel.value = v;
 }
-
 function setTimeSig(num, den){
   num = clamp(Math.round(num) || 4, 1, 32);
   den = clamp(Math.round(den) || 4, 1, 32);
-  S.timeNum = num;
-  S.timeDen = den;
+  S.timeNum = num; S.timeDen = den;
   const need = Math.ceil(contentEnd() / subPerBar()) || 1;
   if(need > S.bars) S.bars = need;
   barsInput.value = S.bars;
   syncTimeSigSelect();
   rebuildTimeline();
 }
-
 function applyZoom(z){
   S.zoom = clamp(z, 0.5, 2);
   zoomRange.value = S.zoom;
   zoomLabel.textContent = (Math.round(S.zoom*100)/100) + '×';
-  updateMetrics();
-  rebuildRows();
-  rebuildTimeline();
-  renderNotes();
+  updateMetrics(); rebuildRows(); rebuildTimeline(); renderNotes();
 }
 
 const undoStack=[];
 const MAX_UNDO=80;
+function snapshotAll(){ return JSON.stringify({tracks:S.tracks, notes:S.notes}); }
 function updateUndoBtn(){ undoBtn.disabled = undoStack.length===0; }
-function snapshot(){ return JSON.stringify(S.notes); }
 function commitAction(before){
   if(before===undefined) return;
-  if(before !== snapshot()){
+  if(before !== snapshotAll()){
     undoStack.push(before);
     if(undoStack.length>MAX_UNDO) undoStack.shift();
     updateUndoBtn();
@@ -968,10 +1451,15 @@ function commitAction(before){
 function undo(){
   if(!undoStack.length) return;
   const s = undoStack.pop();
-  try{ S.notes = JSON.parse(s); }catch(e){ return; }
+  try{
+    const data = JSON.parse(s);
+    if(data.tracks && Array.isArray(data.tracks)) S.tracks = data.tracks;
+    if(data.notes && Array.isArray(data.notes)) S.notes = data.notes;
+  }catch(e){ return; }
   S.nextId = S.notes.reduce((m,n)=>Math.max(m,n.id),0)+1;
-  renderNotes();
-  updateUndoBtn();
+  S.nextTrackId = S.tracks.reduce((m,t)=>Math.max(m,t.id),0)+1;
+  if(!getTrack(S.activeTrackId) && S.tracks.length) S.activeTrackId = S.tracks[0].id;
+  renderTracks(); renderNotes(); updateUndoBtn();
 }
 
 function gridCoords(cx,cy){
@@ -991,7 +1479,6 @@ function growToPointer(gx){
 }
 function snapSub(v){ return Math.round(v / S.snap) * S.snap; }
 function snapFloor(v){ return Math.floor(v / S.snap) * S.snap; }
-
 function showPreview(startSub,pitch,lenSub){
   const c=noteColor(pitch);
   previewEl.style.display='block';
@@ -1001,7 +1488,6 @@ function showPreview(startSub,pitch,lenSub){
   previewEl.style.height = Math.max(5, rowH-3)+'px';
   previewEl.style.background=c+'33';
   previewEl.style.border='1px dashed '+c;
-  previewEl.style.boxShadow='0 0 14px '+c+'55';
 }
 function hidePreview(){ previewEl.style.display='none'; }
 
@@ -1030,112 +1516,272 @@ function showChordPreview(startSub, rootPitch, lenSub){
     el.style.height = h + 'px';
     el.style.background = c + '44';
     el.style.border = '1px dashed ' + c;
-    el.style.boxShadow = '0 0 12px ' + c + '66';
     gridEl.appendChild(el);
     chordPreviewEls.push(el);
   }
 }
 
-/* =========================================================
-   音频引擎（实时）
-   ========================================================= */
-let audioCtx=null;
-let masterGain=null;
-const activeSources=new Set();
-
-function initAudio(){
-  if(!audioCtx){
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(!AC) return;
-    audioCtx=new AC();
-    masterGain=audioCtx.createGain();
-    masterGain.gain.value=0.76;
-    masterGain.connect(audioCtx.destination);
+function makeReverbIR(ctx, seconds, decay){
+  const rate = ctx.sampleRate;
+  const length = Math.max(1, Math.floor(rate * seconds));
+  const impulse = ctx.createBuffer(2, length, rate);
+  for(let ch = 0; ch < 2; ch++){
+    const data = impulse.getChannelData(ch);
+    for(let i = 0; i < length; i++){
+      const t = i / length;
+      const env = Math.pow(1 - t, decay);
+      data[i] = (Math.random() * 2 - 1) * env;
+    }
+    const refl = [0.012, 0.021, 0.034, 0.048, 0.069, 0.094];
+    for(let k = 0; k < refl.length; k++){
+      const idx = Math.floor(refl[k] * rate);
+      if(idx < length){
+        data[idx] += (ch === 0 ? 1 : -1) * 0.35 * Math.pow(0.55, k);
+      }
+    }
   }
-  if(audioCtx.state==='suspended') audioCtx.resume();
+  return impulse;
 }
-
-function applyEnv(param,time,dur,vel,env){
-  const sustain=Math.max(vel*env.sus,0.0002);
-  const t0=time;
-  const t1=time+Math.min(env.atk, dur*0.35);
-  const t2=time+Math.min(env.atk+env.dec, dur*0.75);
-  const t3=time+Math.max(dur-env.rel, dur*0.82);
-  const t4=time+dur;
-  param.setValueAtTime(0.0001,t0);
-  param.exponentialRampToValueAtTime(Math.max(vel,0.0002), Math.max(t1,t0+0.001));
-  if(t2 > t1+0.002) param.exponentialRampToValueAtTime(sustain,t2);
-  if(t3 > t2+0.002) param.setValueAtTime(sustain,t3);
-  param.exponentialRampToValueAtTime(0.0001,t4);
+function supportsStereoPanner(ctx){
+  return typeof ctx.createStereoPanner === 'function';
 }
-
-function playTone(pitch,time,dur,vel,timbreName){
-  if(!audioCtx) return;
-  const def=TIMBRES[timbreName]||TIMBRES.piano;
-  dur=Math.max(dur,0.045);
-  vel=(vel===undefined)?0.26:vel;
-  const freq=midiToFreq(pitch);
-  const out=audioCtx.createGain();
-  const filter=audioCtx.createBiquadFilter();
-  filter.type='lowpass';
-  filter.frequency.setValueAtTime(Math.min(def.lp, freq*8+700), time);
-  filter.Q.value=0.5;
-  out.connect(filter);
-  filter.connect(masterGain);
-  applyEnv(out.gain,time,dur,vel,def.env);
-  const stopAt=time+dur+0.25;
-  def.oscs.forEach(o=>{
-    const osc=audioCtx.createOscillator();
-    osc.type=o.t;
-    osc.frequency.setValueAtTime(freq*o.m,time);
-    if(o.det) osc.detune.setValueAtTime(o.det,time);
-    const g=audioCtx.createGain();
-    g.gain.value=o.g;
-    osc.connect(g); g.connect(out);
-    osc.start(time); osc.stop(stopAt);
-    activeSources.add(osc);
-    osc.onended=()=>activeSources.delete(osc);
+function buildAudioGraph(ctx, destination){
+  const dryBus = ctx.createGain();
+  const reverbBus = ctx.createGain();
+  const reverb = ctx.createConvolver();
+  try{ reverb.buffer = makeReverbIR(ctx, 2.4, 2.4); }catch(e){ reverb.buffer = null; }
+  const reverbReturn = ctx.createGain();
+  reverbReturn.gain.value = 0.6;
+  const compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -12; compressor.knee.value = 8;
+  compressor.ratio.value = 3.2; compressor.attack.value = 0.004;
+  compressor.release.value = 0.18;
+  const master = ctx.createGain();
+  master.gain.value = 0.9;
+  dryBus.connect(master);
+  if(reverb.buffer){
+    reverbBus.connect(reverb);
+    reverb.connect(reverbReturn);
+    reverbReturn.connect(master);
+  }
+  master.connect(compressor);
+  compressor.connect(destination);
+  return { dryBus, reverbBus, reverb, master, compressor, trackNodes: {} };
+}
+function makeTrackChain(graph, ctx, track){
+  const gain = ctx.createGain();
+  gain.gain.value = track.volume;
+  let pan;
+  if(supportsStereoPanner(ctx)){
+    pan = ctx.createStereoPanner();
+    pan.pan.value = track.pan;
+  }else{
+    pan = ctx.createGain();
+    pan.pan = { value: track.pan };
+  }
+  const reverbSend = ctx.createGain();
+  reverbSend.gain.value = track.reverb * 0.6;
+  gain.connect(pan);
+  pan.connect(graph.dryBus);
+  if(graph.reverb && graph.reverb.buffer){
+    pan.connect(reverbSend);
+    reverbSend.connect(graph.reverbBus);
+  }
+  return { gain, pan, reverbSend };
+}
+function getTrackChain(graph, ctx, trackId){
+  if(!graph.trackNodes[trackId]){
+    const track = getTrack(trackId);
+    if(!track) return null;
+    graph.trackNodes[trackId] = makeTrackChain(graph, ctx, track);
+  }
+  return graph.trackNodes[trackId];
+}
+function updateTrackAudio(trackId){
+  const track = getTrack(trackId);
+  if(!track) return;
+  if(audioGraph && audioGraph.trackNodes[trackId]){
+    const n = audioGraph.trackNodes[trackId];
+    if(n.gain) n.gain.gain.value = track.volume;
+    if(n.pan && n.pan.pan) n.pan.pan.value = track.pan;
+    if(n.reverbSend) n.reverbSend.gain.value = track.reverb * 0.6;
+  }
+}
+function initAudio(){
+  try{
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return false;
+      audioCtx = new AC();
+      audioGraph = buildAudioGraph(audioCtx, audioCtx.destination);
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return true;
+  }catch(err){
+    console.error('initAudio failed:', err);
+    return false;
+  }
+}
+function applyEnv(param, time, dur, vel, env){
+  const sustain = Math.max(vel * env.sus, 0.0002);
+  const t0 = time;
+  const t1 = time + Math.min(env.atk, dur * 0.4);
+  const t2 = time + Math.min(env.atk + env.dec, dur * 0.8);
+  const t3 = time + Math.max(dur - env.rel, dur * 0.85);
+  const t4 = time + dur;
+  param.setValueAtTime(0.0001, t0);
+  param.exponentialRampToValueAtTime(Math.max(vel, 0.0002), Math.max(t1, t0 + 0.001));
+  if(t2 > t1 + 0.002) param.exponentialRampToValueAtTime(sustain, t2);
+  if(t3 > t2 + 0.002) param.setValueAtTime(sustain, t3);
+  param.exponentialRampToValueAtTime(0.0001, t4);
+}
+/* ★ 打击乐支持：白噪声缓冲按 ctx 缓存复用 */
+function getNoiseBuffer(ctx){
+  if(!ctx.__melodyNoise){
+    const len = Math.max(1, Math.floor(ctx.sampleRate * 2.5));
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    ctx.__melodyNoise = buf;
+  }
+  return ctx.__melodyNoise;
+}
+/* 音色解析：带 map 的音色（鼓组）按音级映射到具体鼓音色 */
+function resolveTimbre(timbreId, pitch){
+  const def = TIMBRES[timbreId] || TIMBRES.piano;
+  if(def && def.map){
+    const sub = TIMBRES[def.map[pc(pitch)]];
+    if(sub) return sub;
+  }
+  return def;
+}
+/* 建立音色的全部声源（振荡器 / 噪声），接入 out */
+function buildVoiceSources(ctx, def, freq, time, stopAt, out, register){
+  for(let i = 0; i < def.oscs.length; i++){
+    const o = def.oscs[i];
+    let node;
+    if(o.t === 'noise'){
+      node = ctx.createBufferSource();
+      node.buffer = getNoiseBuffer(ctx);
+      node.loop = true;
+    }else{
+      node = ctx.createOscillator();
+      node.type = o.t;
+      const baseFreq = Math.max(freq * o.m, 8);
+      if(o.glide){
+        node.frequency.setValueAtTime(Math.max(baseFreq * o.glide.from, 8), time);
+        node.frequency.exponentialRampToValueAtTime(baseFreq,
+          time + Math.max(o.glide.time || 0.05, 0.005));
+      }else{
+        node.frequency.setValueAtTime(baseFreq, time);
+      }
+      if(o.det) node.detune.setValueAtTime(o.det, time);
+    }
+    let tail = node;
+    if(o.f){
+      const bq = ctx.createBiquadFilter();
+      bq.type = o.f.t || 'bandpass';
+      bq.frequency.value = clamp(o.f.f || 2000, 20, 19000);
+      bq.Q.value = o.f.q === undefined ? 0.7 : o.f.q;
+      node.connect(bq);
+      tail = bq;
+    }
+    const g = ctx.createGain();
+    g.gain.value = o.g;
+    tail.connect(g); g.connect(out);
+    node.start(time); node.stop(stopAt);
+    if(register) register(node);
+  }
+}
+function scheduleSynthNote(ctx, dest, note, track, time, subDur){
+  const def = resolveTimbre(track.timbre, note.pitch);
+  const dur = Math.max(note.length * subDur * 0.94, 0.045);
+  const vel = (note.velocity || 0.85) * 0.30;
+  const freq = midiToFreq(note.pitch);
+  const out = ctx.createGain();
+  applyEnv(out.gain, time, dur, vel, def.env);
+  if(def.perc){
+    out.connect(dest);                       /* 打击乐：不加全局低通，音色由每源滤波决定 */
+  }else{
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass'; filter.Q.value = def.fenv.q;
+    const f = def.fenv;
+    const baseF = Math.min(Math.max(f.base + freq * 0.5, 100), 18000);
+    const peakF = Math.min(Math.max(f.peak + freq * 3, 200), 19000);
+    const t0 = time, t1 = time + f.atk, t2 = time + f.atk + f.dec;
+    const t3 = time + Math.max(dur - f.rel, dur * 0.85), t4 = time + dur;
+    filter.frequency.setValueAtTime(baseF, t0);
+    filter.frequency.linearRampToValueAtTime(peakF, Math.max(t1, t0 + 0.001));
+    const susF = Math.max(baseF + (peakF - baseF) * f.sus, baseF * 1.05);
+    filter.frequency.exponentialRampToValueAtTime(susF, Math.max(t2, t1 + 0.002));
+    filter.frequency.setValueAtTime(susF, Math.max(t3, t2 + 0.002));
+    filter.frequency.exponentialRampToValueAtTime(baseF, t4);
+    out.connect(filter); filter.connect(dest);
+  }
+  const stopAt = time + dur + 0.3;
+  buildVoiceSources(ctx, def, freq, time, stopAt, out, null);
+}
+function playTone(pitch, trackId, time, durSec, velocity){
+  if(!audioCtx || !audioGraph) return;
+  const track = getTrack(trackId);
+  if(!track || !isTrackAudible(track)) return;
+  const chain = getTrackChain(audioGraph, audioCtx, trackId);
+  if(!chain) return;
+  const def = resolveTimbre(track.timbre, pitch);
+  const vel = (velocity === undefined ? 0.85 : velocity) * 0.30;
+  const freq = midiToFreq(pitch);
+  const dur = Math.max(durSec, 0.05);
+  const out = audioCtx.createGain();
+  applyEnv(out.gain, time, dur, vel, def.env);
+  if(def.perc){
+    out.connect(chain.gain);                 /* 打击乐：不加全局低通 */
+  }else{
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass'; filter.Q.value = def.fenv.q;
+    filter.frequency.setValueAtTime(Math.min(def.fenv.peak, freq * 6 + 900), time);
+    out.connect(filter); filter.connect(chain.gain);
+  }
+  const stopAt = time + dur + 0.3;
+  buildVoiceSources(audioCtx, def, freq, time, stopAt, out, function(node){
+    activeSources.add(node);
+    node.onended = () => activeSources.delete(node);
   });
 }
-
-function playClick(time,accent){
-  if(!audioCtx) return;
-  const osc=audioCtx.createOscillator();
-  const g=audioCtx.createGain();
-  osc.type='square';
-  osc.frequency.setValueAtTime(accent?1700:1050,time);
-  g.gain.setValueAtTime(0.0001,time);
-  g.gain.exponentialRampToValueAtTime(accent?0.15:0.08,time+0.002);
-  g.gain.exponentialRampToValueAtTime(0.0001,time+0.05);
-  osc.connect(g); g.connect(masterGain);
-  osc.start(time); osc.stop(time+0.07);
+function playClick(time, accent){
+  if(!audioCtx || !audioGraph) return;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(accent ? 1700 : 1050, time);
+  g.gain.setValueAtTime(0.0001, time);
+  g.gain.exponentialRampToValueAtTime(accent ? 0.14 : 0.075, time + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+  osc.connect(g); g.connect(audioGraph.dryBus);
+  osc.start(time); osc.stop(time + 0.07);
   activeSources.add(osc);
-  osc.onended=()=>activeSources.delete(osc);
+  osc.onended = () => activeSources.delete(osc);
 }
 
-pianoKeysEl.addEventListener('pointerdown',function(e){
-  const key=e.target.closest('.key');
+pianoKeysEl.addEventListener('pointerdown', function(e){
+  const key = e.target.closest('.key');
   if(!key) return;
   e.preventDefault();
-  initAudio();
-  if(!audioCtx) return;
-  const pitch=Number(key.dataset.pitch);
-  playTone(pitch,audioCtx.currentTime+0.01,0.55,0.30,S.timbre);
+  if(!initAudio()) return;
+  const pitch = Number(key.dataset.pitch);
+  const track = getActiveTrack();
+  if(track) playTone(pitch, track.id, audioCtx.currentTime + 0.01, 0.55, 0.9);
   key.classList.add('active');
   setTimeout(()=>key.classList.remove('active'),160);
 });
 
-/* 播放头拖动试听 */
 let scrubbing = false;
 let scrubTriggered = {};
 let scrubLastSub = 0;
-
 function startScrub(e){
   if(e.pointerType === 'mouse' && e.button !== 0) return;
   if(playState) stop();
   initAudio();
-  scrubbing = true;
-  scrubTriggered = {};
+  scrubbing = true; scrubTriggered = {};
   const g = gridCoords(e.clientX, e.clientY);
   const sub = clamp(g.x / subW, 0, totalSub());
   scrubLastSub = sub;
@@ -1144,10 +1790,8 @@ function startScrub(e){
   document.addEventListener('pointerup', onScrubEnd);
   document.addEventListener('pointercancel', onScrubEnd);
   document.body.classList.add('scrubbing');
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault(); e.stopPropagation();
 }
-
 function onScrubMove(e){
   if(!scrubbing) return;
   e.preventDefault();
@@ -1162,19 +1806,22 @@ function onScrubMove(e){
     const hits = [];
     for(let i=0;i<S.notes.length;i++){
       const n = S.notes[i];
-      if(n.start >= from - 0.001 && n.start <= to + 0.001) hits.push(n);
+      if(n.start >= from - 0.001 && n.start <= to + 0.001){
+        const t = getTrack(n.trackId);
+        if(t && isTrackAudible(t)) hits.push(n);
+      }
     }
-    if(hits.length > 2){
+    if(hits.length > 3){
       hits.sort((a,b)=> Math.abs(a.start-sub) - Math.abs(b.start-sub));
-      hits.length = 2;
+      hits.length = 3;
     }
     const stepDur = 60 / S.bpm;
     for(let i=0;i<hits.length;i++){
       const n = hits[i];
       const last = scrubTriggered[n.id] || 0;
       if(now - last > 110){
-        const dur = Math.min(n.length * stepDur * 0.9, 0.45);
-        playTone(n.pitch, audioCtx.currentTime + 0.005, Math.max(dur, 0.10), 0.30, S.timbre);
+        const dur = Math.min(n.length * stepDur * 0.9, 0.5);
+        playTone(n.pitch, n.trackId, audioCtx.currentTime + 0.005, Math.max(dur, 0.12), 0.9);
         scrubTriggered[n.id] = now;
       }
     }
@@ -1182,7 +1829,6 @@ function onScrubMove(e){
   scrubLastSub = sub;
   setPlayhead(sub, true);
 }
-
 function onScrubEnd(){
   if(!scrubbing) return;
   scrubbing = false;
@@ -1195,13 +1841,10 @@ function onScrubEnd(){
   snapped = clamp(snapped, 0, totalSub());
   setPlayhead(snapped, true);
 }
-
 rulerEl.addEventListener('pointerdown', startScrub);
 playheadHitEl.addEventListener('pointerdown', startScrub);
 
-/* 音符拖拽 */
 let drag=null;
-
 function bindMove(){
   document.addEventListener('pointermove',onDocMove,{passive:false});
   document.addEventListener('pointerup',onDocUp);
@@ -1214,7 +1857,6 @@ function unbindMove(){
   document.removeEventListener('pointercancel',onDocUp);
   document.body.classList.remove('dragging');
 }
-
 noteLayer.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse' && e.button!==0) return;
   const noteEl = e.target.closest ? e.target.closest('.note') : null;
@@ -1222,10 +1864,15 @@ noteLayer.addEventListener('pointerdown',function(e){
     const note = S.notes.find(n=>n.id===Number(noteEl.dataset.id));
     if(!note) return;
     e.preventDefault();
+    if(note.trackId !== S.activeTrackId){
+      S.activeTrackId = note.trackId;
+      renderTracks(); renderNotes();
+      return;
+    }
     const g=gridCoords(e.clientX,e.clientY);
-    const before=snapshot();
+    const before=snapshotAll();
     if(e.target.classList.contains('handle')){
-      drag={mode:'resize',note,el:noteEl,before,startX:g.x,origLen:note.length};
+      drag={mode:'resize',note,el:noteEl,before};
     }else{
       drag={mode:'move',note,el:noteEl,before,offX:g.x-note.start*subW,offY:g.y-(PITCH_HIGH-note.pitch)*rowH};
     }
@@ -1235,7 +1882,6 @@ noteLayer.addEventListener('pointerdown',function(e){
     startDraw(e);
   }
 });
-
 function startDraw(e){
   const g=gridCoords(e.clientX,e.clientY);
   if(!isInsideGrid(g)) return;
@@ -1243,29 +1889,24 @@ function startDraw(e){
   const startSub = clamp(snapFloor(rawSub), 0, totalSub()-1);
   const row   = clamp(Math.floor(g.y/rowH),0,ROWS-1);
   const pitch = PITCH_HIGH - row;
-
+  const track = getActiveTrack();
+  if(!track) return;
   if(chordMode){
-    const before = snapshot();
-    drag = {
-      mode: 'chord', chord: chordMode,
-      startSub: startSub, rootPitch: pitch,
-      lenSub: DUR_BY_ID[S.curDur].sub,
-      anchorX: g.x, before: before
-    };
+    const before = snapshotAll();
+    drag = { mode:'chord', chord: chordMode, startSub, rootPitch: pitch,
+             lenSub: DUR_BY_ID[S.curDur].sub, anchorX: g.x, before, trackId: track.id };
     showChordPreview(startSub, pitch, drag.lenSub);
     bindMove();
     return;
   }
-
-  const before=snapshot();
-  const note={ id:S.nextId++, pitch, start:startSub, length:S.snap };
+  const before=snapshotAll();
+  const note={ id:S.nextId++, trackId: track.id, pitch, start:startSub, length:S.snap, velocity: 0.85 };
   S.notes.push(note);
   const el = createNoteEl(note);
   noteLayer.appendChild(el);
   drag={ mode:'draw', note, el, before, anchorX:g.x, anchorSub:startSub };
   bindMove();
 }
-
 chipsEl.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse' && e.button!==0) return;
   const chip=e.target.closest('.chip');
@@ -1284,50 +1925,43 @@ chipsEl.addEventListener('pointerdown',function(e){
   const durDef = DUR_BY_ID[S.curDur] || DUR_BY_ID.q;
   const ghost=document.createElement('div');
   ghost.className='drag-ghost';
-  ghost.textContent = noteName(pitch)+' 简谱'+jianpuText(pitch)+' · '+durDef.short;
+  ghost.textContent = noteName(pitch)+' · '+durDef.short;
   ghost.style.background=noteColor(pitch);
   ghost.style.transform='translate('+(e.clientX+14)+'px,'+(e.clientY-12)+'px)';
   document.body.appendChild(ghost);
-  drag={ mode:'palette', ghost, pitch, lenSub: durDef.sub, targetStep:null, targetPitch:pitch, before:snapshot() };
+  drag={ mode:'palette', ghost, pitch, lenSub: durDef.sub, targetStep:null, targetPitch:pitch, before:snapshotAll() };
   bindMove();
 });
-
 function onDocMove(e){
   if(!drag) return;
   e.preventDefault();
   autoScroll(e.clientX);
   const g=gridCoords(e.clientX,e.clientY);
   const ts=totalSub();
-
   if(drag.mode === 'chord'){
     if(g.x > ts*subW - beatW) growToPointer(g.x);
     const baseLen = DUR_BY_ID[S.curDur].sub;
     const raw = (g.x - drag.anchorX) / subW;
     let len = Math.round(raw / S.snap) * S.snap + baseLen;
     if(len < baseLen) len = baseLen;
-    const maxLen = totalSub() - drag.startSub;
-    len = clamp(len, baseLen, maxLen);
+    len = clamp(len, baseLen, totalSub() - drag.startSub);
     if(len !== drag.lenSub){ drag.lenSub = len; showChordPreview(drag.startSub, drag.rootPitch, len); }
     return;
   }
-
   if(drag.mode==='draw'){
     if(g.x > ts*subW - beatW) growToPointer(g.x);
     const raw = (g.x - drag.anchorX) / subW;
     let len = Math.round(raw / S.snap) * S.snap + S.snap;
     if(len < S.snap) len = S.snap;
-    const maxLen = totalSub() - drag.anchorSub;
-    len = clamp(len, S.snap, maxLen);
+    len = clamp(len, S.snap, totalSub() - drag.anchorSub);
     if(len!==drag.note.length){
       drag.note.length=len;
-      const w = Math.max(3, len*subW-2);
-      drag.el.style.width = w+'px';
-      drag.el.classList.toggle('tiny', w < 15);
+      drag.el.style.width = Math.max(3, len*subW-2)+'px';
+      drag.el.classList.toggle('tiny', len*subW-2 < 15);
       refreshNoteLabel(drag.el, drag.note);
     }
     return;
   }
-
   if(drag.mode==='move'){
     if(g.x > ts*subW - beatW) growToPointer(g.x);
     const left=g.x-drag.offX;
@@ -1346,7 +1980,6 @@ function onDocMove(e){
     }
     return;
   }
-
   if(drag.mode==='resize'){
     if(g.x > ts*subW - beatW) growToPointer(g.x);
     const maxLen = totalSub()-drag.note.start;
@@ -1356,14 +1989,12 @@ function onDocMove(e){
     len = clamp(len, S.snap, maxLen);
     if(len!==drag.note.length){
       drag.note.length=len;
-      const w = Math.max(3, len*subW-2);
-      drag.el.style.width = w + 'px';
-      drag.el.classList.toggle('tiny', w < 15);
+      drag.el.style.width = Math.max(3, len*subW-2)+'px';
+      drag.el.classList.toggle('tiny', len*subW-2 < 15);
       refreshNoteLabel(drag.el, drag.note);
     }
     return;
   }
-
   if(drag.mode==='palette'){
     drag.ghost.style.transform='translate('+(e.clientX+14)+'px,'+(e.clientY-12)+'px)';
     if(isInsideGrid(g)){
@@ -1374,23 +2005,21 @@ function onDocMove(e){
       drag.targetPitch = PITCH_HIGH-row;
       showPreview(step, drag.targetPitch, drag.lenSub);
     }else{
-      drag.targetStep=null;
-      hidePreview();
+      drag.targetStep=null; hidePreview();
     }
   }
 }
-
 function onDocUp(){
   if(!drag) return;
   const d=drag;
   drag=null;
   unbindMove();
-
   if(d.mode === 'chord'){
     hideChordPreview();
     const pitches = fitChord(d.rootPitch, d.chord.intervals);
     for(let i=0;i<pitches.length;i++){
-      S.notes.push({ id: S.nextId++, pitch: pitches[i], start: d.startSub, length: d.lenSub });
+      S.notes.push({ id: S.nextId++, trackId: d.trackId, pitch: pitches[i],
+                     start: d.startSub, length: d.lenSub, velocity: 0.85 });
     }
     ensureCapacity(contentEnd()+unitSub());
     renderNotes();
@@ -1399,43 +2028,41 @@ function onDocUp(){
       const stepDur = 60 / S.bpm;
       const dur = Math.min(d.lenSub * stepDur * 0.9, 0.6);
       for(let i=0;i<pitches.length;i++){
-        playTone(pitches[i], audioCtx.currentTime + 0.01, Math.max(dur, 0.15), 0.22, S.timbre);
+        playTone(pitches[i], d.trackId, audioCtx.currentTime + 0.01, Math.max(dur, 0.15), 0.75);
       }
     }
     return;
   }
-
   if(d.mode==='palette'){
-    d.ghost.remove();
-    hidePreview();
+    d.ghost.remove(); hidePreview();
     if(d.targetStep!==null && d.targetStep!==undefined){
-      S.notes.push({ id:S.nextId++, pitch:d.targetPitch, start:d.targetStep, length:d.lenSub });
-      renderNotes();
-      commitAction(d.before);
+      const track = getActiveTrack();
+      if(track){
+        S.notes.push({ id:S.nextId++, trackId: track.id, pitch:d.targetPitch,
+                       start:d.targetStep, length:d.lenSub, velocity: 0.85 });
+        renderNotes();
+        commitAction(d.before);
+      }
     }
     return;
   }
   ensureCapacity(contentEnd()+unitSub());
   commitAction(d.before);
 }
-
 noteLayer.addEventListener('dblclick',function(e){
   const el=e.target.closest ? e.target.closest('.note') : null;
   if(!el) return;
   const id=Number(el.dataset.id);
   const idx=S.notes.findIndex(n=>n.id===id);
   if(idx<0) return;
-  const before=snapshot();
+  const before=snapshotAll();
   S.notes.splice(idx,1);
   renderNotes();
   commitAction(before);
 });
-
 let lastChordPreviewKey = '';
 noteLayer.addEventListener('pointermove', function(e){
-  if(!chordMode) return;
-  if(drag) return;
-  if(scrubbing) return;
+  if(!chordMode || drag || scrubbing) return;
   const g = gridCoords(e.clientX, e.clientY);
   if(!isInsideGrid(g)){ hideChordPreview(); lastChordPreviewKey = ''; return; }
   const step = clamp(snapFloor(g.x / subW), 0, totalSub() - 1);
@@ -1450,15 +2077,15 @@ noteLayer.addEventListener('pointermove', function(e){
 noteLayer.addEventListener('pointerleave', function(){
   if(chordMode && !drag){ hideChordPreview(); lastChordPreviewKey = ''; }
 });
-
 noteLayer.addEventListener('pointerover', function(e){
   const noteEl = e.target.closest ? e.target.closest('.note') : null;
   if(!noteEl) return;
   const note = S.notes.find(n => n.id === Number(noteEl.dataset.id));
   if(!note) return;
-  const sameStart = S.notes.filter(n => n.start === note.start);
+  const sameStart = S.notes.filter(n => n.trackId === note.trackId && n.start === note.start);
   if(sameStart.length < 2){
-    chordInfoValue.textContent = noteName(note.pitch) + ' · 单音';
+    const track = getTrack(note.trackId);
+    chordInfoValue.textContent = noteName(note.pitch) + ' · ' + (track ? track.name : '');
     chordInfoValue.style.color = '#98a3bb';
     return;
   }
@@ -1478,7 +2105,6 @@ noteLayer.addEventListener('pointerout', function(e){
   chordInfoValue.textContent = '—';
   chordInfoValue.style.color = '#98a3bb';
 });
-
 let scrollLock=false;
 stageEl.addEventListener('scroll',function(){
   if(scrollLock) return;
@@ -1491,15 +2117,10 @@ stageEl.addEventListener('scroll',function(){
   }
 });
 
-/* 播放 */
-let playState=null;
-let schedulerTimer=null;
-let rafId=null;
-
 function play(){
   if(playState) return;
-  initAudio();
-  if(!audioCtx) return;
+  if(!initAudio()) return;
+  if(!audioCtx || !audioGraph) return;
   if(audioCtx.state==='suspended') audioCtx.resume();
   const bpm=clamp(parseInt(bpmInput.value,10)||120,40,240);
   S.bpm=bpm;
@@ -1511,20 +2132,14 @@ function play(){
   const playLen = barsNeeded * sBar;
   let startSub = Math.floor(playheadSub);
   if(startSub >= playLen) startSub = 0;
-  playState = {
-    subDur, playLen, startSub,
-    subIndex: startSub,
-    nextTime: t0, startTime: t0,
-    endTime: Infinity, done: false,
-    uSub: unitSub(), sBar: sBar
-  };
+  playState = { subDur, playLen, startSub, subIndex: startSub, nextTime: t0, startTime: t0,
+    endTime: Infinity, done: false, uSub: unitSub(), sBar };
   playBtn.classList.add('playing');
   playBtn.textContent='❚❚ 停止';
   schedulerTimer=setInterval(scheduleAhead,25);
   scheduleAhead();
   rafId=requestAnimationFrame(tick);
 }
-
 function scheduleAhead(){
   if(!playState) return;
   const ctx=audioCtx;
@@ -1545,14 +2160,17 @@ function scheduleAhead(){
     for(let i=0;i<S.notes.length;i++){
       const n=S.notes[i];
       if(n.start===si){
-        playTone(n.pitch, playState.nextTime, n.length*playState.subDur*0.94, 0.26, S.timbre);
+        const track = getTrack(n.trackId);
+        if(track && isTrackAudible(track)){
+          const chain = getTrackChain(audioGraph, audioCtx, n.trackId);
+          if(chain) scheduleSynthNote(audioCtx, chain.gain, n, track, playState.nextTime, playState.subDur);
+        }
       }
     }
     playState.nextTime += playState.subDur;
     playState.subIndex++;
   }
 }
-
 function tick(){
   if(!playState) return;
   const ctx=audioCtx;
@@ -1571,7 +2189,6 @@ function tick(){
   setPlayhead(pos, true);
   rafId=requestAnimationFrame(tick);
 }
-
 function stop(){
   if(schedulerTimer){clearInterval(schedulerTimer);schedulerTimer=null;}
   if(rafId){cancelAnimationFrame(rafId);rafId=null;}
@@ -1583,7 +2200,6 @@ function stop(){
   activeSources.clear();
 }
 
-/* MIDI 导出 */
 function varLen(v){
   v=v>>>0;
   const out=[v&0x7F];
@@ -1591,101 +2207,110 @@ function varLen(v){
   while(v>0){ out.unshift((v&0x7F)|0x80); v>>>=7; }
   return out;
 }
-
-function exportMIDI(){
-  if(!S.notes.length){ alert('还没有音符，先创作一点吧 🎵'); return; }
-  const PPQ=480;
-  const ticksPerSub = PPQ / SUB;
-  const bpm=clamp(parseInt(bpmInput.value,10)||120,40,240);
-  const mpqn=Math.round(60000000/bpm);
-  const evts=[];
-  evts.push({t:0,o:0,d:[0xFF,0x51,0x03,(mpqn>>16)&0xFF,(mpqn>>8)&0xFF,mpqn&0xFF]});
-  evts.push({t:0,o:0,d:[0xFF,0x58,0x04, S.timeNum, denPow2(S.timeDen), 24, 8]});
-  const title='Melody Grid';
-  const tb=[];
-  for(let i=0;i<title.length;i++) tb.push(title.charCodeAt(i)&0x7F);
-  evts.push({t:0,o:0,d:[0xFF,0x03,tb.length].concat(tb)});
-  S.notes.forEach(n=>{
-    const on = Math.round(n.start * ticksPerSub);
-    const off= Math.round((n.start + n.length) * ticksPerSub);
-    evts.push({t:on, o:1, d:[0x90, clamp(n.pitch,0,127), 100]});
-    evts.push({t:off,o:0, d:[0x80, clamp(n.pitch,0,127), 64]});
-  });
-  evts.sort((a,b)=> (a.t-b.t) || (a.o-b.o));
-  const track=[];
-  let last=0;
-  for(const e of evts){
-    const delta=e.t-last;
-    last=e.t;
+function trackChunk(evts){
+  const track = []; let last = 0;
+  for(let i=0;i<evts.length;i++){
+    const e = evts[i];
+    const delta = e.t - last; last = e.t;
     track.push.apply(track, varLen(delta));
     track.push.apply(track, e.d);
   }
   track.push.apply(track, varLen(0));
-  track.push(0xFF,0x2F,0x00);
+  track.push(0xFF, 0x2F, 0x00);
+  return track;
+}
+function exportMIDI(){
+  if(!S.notes.length){ alert('还没有音符，先创作一点吧 🎵'); return; }
+  const PPQ=480, ticksPerSub = PPQ / SUB;
+  const bpm=clamp(parseInt(bpmInput.value,10)||120,40,240);
+  const mpqn=Math.round(60000000/bpm);
+  const meta = [];
+  meta.push({t:0, d:[0xFF,0x51,0x03,(mpqn>>16)&0xFF,(mpqn>>8)&0xFF,mpqn&0xFF]});
+  meta.push({t:0, d:[0xFF,0x58,0x04, S.timeNum, denPow2(S.timeDen), 24, 8]});
+  const title='Melody Grid';
+  const tb=[];
+  for(let i=0;i<title.length;i++) tb.push(title.charCodeAt(i)&0x7F);
+  meta.push({t:0, d:[0xFF,0x03,tb.length].concat(tb)});
+  const metaChunk = trackChunk(meta);
+  const trackChunks = [];
+  S.tracks.forEach(t => {
+    const evts = [];
+    const name = t.name || ('Track ' + t.id);
+    const nb = [];
+    for(let i=0;i<name.length;i++) nb.push(name.charCodeAt(i)&0x7F);
+    evts.push({t:0, d:[0xFF,0x03, nb.length].concat(nb)});
+    const ch = (t.id - 1) % 16;
+    const progMap = { piano:0, epiano:4, organ:16, guitar:24, bass:32, strings:48,
+                      brass:56, flute:73, clarinet:71, bell:14, marimba:12, pad:88, synth:81, choir:52,
+                      kick:116, snare:118, hihat:118, tom:117, crash:119, drumkit:118 };
+    evts.push({t:0, d:[0xC0|ch, progMap[t.timbre] || 0]});
+    evts.push({t:0, d:[0xB0|ch, 7, clamp(Math.round(t.volume * 100), 0, 127)]});
+    evts.push({t:0, d:[0xB0|ch, 10, clamp(Math.round((t.pan + 1) * 63.5), 0, 127)]});
+    const notes = S.notes.filter(n => n.trackId === t.id);
+    for(let i=0;i<notes.length;i++){
+      const n = notes[i];
+      const on = Math.round(n.start * ticksPerSub);
+      const off = Math.round((n.start + n.length) * ticksPerSub);
+      const vel = clamp(Math.round((n.velocity||0.85) * 100), 1, 127);
+      evts.push({t:on, d:[0x90|ch, clamp(n.pitch,0,127), vel]});
+      evts.push({t:off, d:[0x80|ch, clamp(n.pitch,0,127), 64]});
+    }
+    evts.sort((a,b) => a.t - b.t);
+    trackChunks.push(trackChunk(evts));
+  });
   const bytes=[];
   bytes.push(0x4D,0x54,0x68,0x64, 0,0,0,6, 0,0, 0,1, (PPQ>>8)&0xFF, PPQ&0xFF);
-  bytes.push(0x4D,0x54,0x72,0x6B);
-  const len=track.length;
-  bytes.push((len>>>24)&0xFF,(len>>>16)&0xFF,(len>>>8)&0xFF,len&0xFF);
-  bytes.push.apply(bytes, track);
+  function pushChunk(chunk){
+    bytes.push(0x4D,0x54,0x72,0x6B);
+    const len = chunk.length;
+    bytes.push((len>>>24)&0xFF,(len>>>16)&0xFF,(len>>>8)&0xFF,len&0xFF);
+    bytes.push.apply(bytes, chunk);
+  }
+  pushChunk(metaChunk);
+  trackChunks.forEach(pushChunk);
   const blob=new Blob([new Uint8Array(bytes)],{type:'audio/midi'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;
-  a.download='melody-'+Date.now()+'.mid';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href=url; a.download='melody-'+Date.now()+'.mid';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 
-/* =========================================================
-   ★ MP3 导出（离线渲染 + lamejs 编码）
-   ========================================================= */
 let lameLoadPromise = null;
-
 function loadScriptOnce(src){
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = src;
-    s.async = true;
+    s.src = src; s.async = true;
     s.onload = () => resolve();
     s.onerror = () => reject(new Error('加载失败: ' + src));
     document.head.appendChild(s);
   });
 }
-
 async function ensureLameJS(){
   if(typeof window.lamejs !== 'undefined' && window.lamejs.Mp3Encoder) return true;
   if(lameLoadPromise) return lameLoadPromise;
-
   const sources = [
     'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js',
     'https://unpkg.com/lamejs@1.2.1/lame.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js'
   ];
-
   lameLoadPromise = (async () => {
     for(const url of sources){
       try{
         await loadScriptOnce(url);
         if(typeof window.lamejs !== 'undefined' && window.lamejs.Mp3Encoder) return true;
-      }catch(e){ /* 尝试下一个 */ }
+      }catch(e){}
     }
     lameLoadPromise = null;
     return false;
   })();
-
   return lameLoadPromise;
 }
-
-/* 浮层控制 */
 function showMp3Overlay(){
   mp3Overlay.classList.add('open');
   mp3TitleText.textContent = '正在导出 MP3…';
   mp3Step.textContent = '准备音频引擎';
-  mp3BarInner.style.width = '0%';
-  mp3Pct.textContent = '0%';
+  mp3BarInner.style.width = '0%'; mp3Pct.textContent = '0%';
 }
 function updateMp3Overlay(step, percent){
   if(step) mp3Step.textContent = step;
@@ -1693,113 +2318,57 @@ function updateMp3Overlay(step, percent){
   mp3BarInner.style.width = p + '%';
   mp3Pct.textContent = Math.round(p) + '%';
 }
-function hideMp3Overlay(){
-  mp3Overlay.classList.remove('open');
-}
-
-/* 离线渲染所有音符到 AudioBuffer */
+function hideMp3Overlay(){ mp3Overlay.classList.remove('open'); }
 async function renderOfflineBuffer(){
   const sampleRate = 44100;
   const bpm = clamp(parseInt(bpmInput.value,10)||120, 40, 240);
   const subDur = 60 / bpm / SUB;
-
   const sBar = subPerBar();
   const contentLen = contentEnd();
   const barsNeeded = Math.max(1, Math.ceil(contentLen / sBar));
   const totalSubs = barsNeeded * sBar;
-  const totalSec = totalSubs * subDur + 1.2;   // 尾部留 1.2 秒自然衰减
-
+  const totalSec = totalSubs * subDur + 1.8;
   const length = Math.ceil(sampleRate * totalSec);
   const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   const offCtx = new OfflineCtx(2, length, sampleRate);
-
-  // 主输出链：Gain → Compressor → Destination
-  const master = offCtx.createGain();
-  master.gain.value = 0.85;
-
-  const compressor = offCtx.createDynamicsCompressor();
-  compressor.threshold.value = -14;
-  compressor.knee.value = 8;
-  compressor.ratio.value = 4;
-  compressor.attack.value = 0.004;
-  compressor.release.value = 0.12;
-
-  master.connect(compressor);
-  compressor.connect(offCtx.destination);
-
-  // 调度每个音符（使用与实时播放完全相同的合成方式）
-  const timbreName = S.timbre;
-  const def = TIMBRES[timbreName] || TIMBRES.piano;
-
+  const graph = buildAudioGraph(offCtx, offCtx.destination);
+  const audibleTracks = S.tracks.filter(t => isTrackAudible(t));
+  const chains = {};
+  audibleTracks.forEach(t => { chains[t.id] = makeTrackChain(graph, offCtx, t); });
   for(let i=0;i<S.notes.length;i++){
     const n = S.notes[i];
+    const track = getTrack(n.trackId);
+    if(!track || !isTrackAudible(track)) continue;
+    const chain = chains[track.id];
+    if(!chain) continue;
     const time = n.start * subDur;
-    const dur = Math.max(n.length * subDur * 0.94, 0.045);
-    const vel = 0.26;
-    const freq = midiToFreq(n.pitch);
-
-    const out = offCtx.createGain();
-    const filter = offCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(def.lp, freq*8+700), time);
-    filter.Q.value = 0.5;
-
-    out.connect(filter);
-    filter.connect(master);
-
-    applyEnv(out.gain, time, dur, vel, def.env);
-    const stopAt = time + dur + 0.25;
-
-    for(let k=0;k<def.oscs.length;k++){
-      const o = def.oscs[k];
-      const osc = offCtx.createOscillator();
-      osc.type = o.t;
-      osc.frequency.setValueAtTime(freq * o.m, time);
-      if(o.det) osc.detune.setValueAtTime(o.det, time);
-      const g = offCtx.createGain();
-      g.gain.value = o.g;
-      osc.connect(g);
-      g.connect(out);
-      osc.start(time);
-      osc.stop(stopAt);
-    }
+    scheduleSynthNote(offCtx, chain.gain, n, track, time, subDur);
   }
-
   return await offCtx.startRendering();
 }
-
-/* 将 AudioBuffer 编码为 MP3 字节数组 */
 function encodeMP3Buffer(audioBuffer, kbps, onProgress){
   const channels = Math.min(audioBuffer.numberOfChannels, 2);
   const sampleRate = audioBuffer.sampleRate;
   const left = audioBuffer.getChannelData(0);
   const right = channels > 1 ? audioBuffer.getChannelData(1) : left;
   const totalLen = left.length;
-
   const mp3encoder = new window.lamejs.Mp3Encoder(channels, sampleRate, kbps);
   const sampleBlockSize = 1152;
   const mp3Data = [];
-
-  // 转 Int16
   const leftInt = new Int16Array(totalLen);
   const rightInt = channels > 1 ? new Int16Array(totalLen) : leftInt;
-
   for(let i = 0; i < totalLen; i++){
     let sL = left[i];
     if(sL > 1) sL = 1; else if(sL < -1) sL = -1;
     leftInt[i] = sL < 0 ? sL * 0x8000 : sL * 0x7FFF;
-
     if(channels > 1){
       let sR = right[i];
       if(sR > 1) sR = 1; else if(sR < -1) sR = -1;
       rightInt[i] = sR < 0 ? sR * 0x8000 : sR * 0x7FFF;
     }
   }
-
-  // 分块编码
   const totalBlocks = Math.ceil(totalLen / sampleBlockSize);
-  const reportEvery = Math.max(1, Math.floor(totalBlocks / 60)); // 最多上报 60 次
-
+  const reportEvery = Math.max(1, Math.floor(totalBlocks / 60));
   for(let i = 0; i < totalLen; i += sampleBlockSize){
     const leftChunk = leftInt.subarray(i, i + sampleBlockSize);
     let mp3buf;
@@ -1810,84 +2379,53 @@ function encodeMP3Buffer(audioBuffer, kbps, onProgress){
       mp3buf = mp3encoder.encodeBuffer(leftChunk);
     }
     if(mp3buf && mp3buf.length > 0) mp3Data.push(new Uint8Array(mp3buf));
-
     const blockIdx = Math.floor(i / sampleBlockSize);
     if(onProgress && blockIdx % reportEvery === 0){
       onProgress((blockIdx / totalBlocks) * 100);
     }
   }
-
   const end = mp3encoder.flush();
   if(end && end.length > 0) mp3Data.push(new Uint8Array(end));
   if(onProgress) onProgress(100);
-
   return mp3Data;
 }
-
-/* 主入口：导出 MP3 */
 async function exportMP3(){
   if(!S.notes.length){ alert('还没有音符，先创作一点吧 🎵'); return; }
   if(exportMp3Btn.disabled) return;
-
-  // 停止播放，避免干扰
   stop();
-
   showMp3Overlay();
   exportMp3Btn.disabled = true;
   const originalText = exportMp3Btn.textContent;
   exportMp3Btn.textContent = '⏳ 生成中…';
-
   try{
-    // 1. 加载 lamejs
     updateMp3Overlay('加载 MP3 编码器', 5);
     const ok = await ensureLameJS();
-    if(!ok){
-      throw new Error('无法加载 MP3 编码器（lamejs），请检查网络连接后重试');
-    }
-
-    // 2. 离线渲染
-    updateMp3Overlay('渲染音频（离线合成中）…', 15);
-    // 渲染前让 UI 更新一次
+    if(!ok) throw new Error('无法加载 MP3 编码器（lamejs），请检查网络连接后重试');
+    updateMp3Overlay('渲染多轨音频（离线合成中）…', 15);
     await new Promise(r => setTimeout(r, 40));
-
     const audioBuffer = await renderOfflineBuffer();
     const totalSec = audioBuffer.length / audioBuffer.sampleRate;
-    updateMp3Overlay('音频渲染完成（' + totalSec.toFixed(1) + ' 秒），开始编码…', 45);
-
+    updateMp3Overlay('多轨混音完成（' + totalSec.toFixed(1) + ' 秒），开始编码…', 45);
     await new Promise(r => setTimeout(r, 30));
-
-    // 3. 编码 MP3
     const mp3Chunks = encodeMP3Buffer(audioBuffer, 192, (p) => {
       updateMp3Overlay(null, 45 + p * 0.5);
     });
-
-    // 4. 打包下载
     updateMp3Overlay('正在生成下载文件…', 98);
     await new Promise(r => setTimeout(r, 40));
-
     const blob = new Blob(mp3Chunks, { type: 'audio/mpeg' });
     const url = URL.createObjectURL(blob);
-
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     const stamp = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) +
                   '-' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
     const filename = 'melody-' + stamp + '.mp3';
-
     const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     updateMp3Overlay('✅ 导出完成：' + filename, 100);
     mp3TitleText.textContent = '导出成功！';
     setTimeout(() => { URL.revokeObjectURL(url); }, 4000);
-
-    // 稍后关闭浮层
     setTimeout(hideMp3Overlay, 900);
-
   }catch(err){
     console.error(err);
     mp3TitleText.textContent = '导出失败';
@@ -1898,34 +2436,25 @@ async function exportMP3(){
     exportMp3Btn.textContent = originalText;
   }
 }
-
 exportMp3Btn.addEventListener('click', exportMP3);
 
-/* 本地随机生成 */
 function degreeToPitch(deg, scale){
   const len=scale.length;
   const oct=Math.floor(deg/len);
   const idx=((deg%len)+len)%len;
   return PITCH_LOW + 12*oct + scale[idx];
 }
-
 function generateMelody(){
   const scale=(SCALES[S.scale]||SCALES.major).steps;
   const sBar = subPerBar();
   const bars = clamp(S.bars, 2, 16);
   const PROGS = [[0,4,5,3],[0,5,3,4],[0,3,4,4],[5,3,0,4],[0,4,3,5],[0,5,1,4]];
   const prog=PROGS[Math.floor(Math.random()*PROGS.length)];
-  const out=[];
-  let deg=7;
+  const out=[]; let deg=7;
   const weighted = DURS.map(d=>{
-    const q=d.sub/SUB;
-    let w;
-    if(q>=3) w=1;
-    else if(q>=1.5) w=3;
-    else if(q>=1) w=7;
-    else if(q>=0.5) w=6;
-    else if(q>=0.25) w=4;
-    else w=2;
+    const q=d.sub/SUB; let w;
+    if(q>=3) w=1; else if(q>=1.5) w=3; else if(q>=1) w=7;
+    else if(q>=0.5) w=6; else if(q>=0.25) w=4; else w=2;
     return {d,w};
   });
   for(let bar=0; bar<bars; bar++){
@@ -1944,11 +2473,9 @@ function generateMelody(){
       }
       const dur=pick.d;
       let useDeg;
-      if(pos===0){
-        useDeg = root + 7 + [0,2,4][Math.floor(Math.random()*3)];
-      }else if(Math.random()<0.44){
-        useDeg = root + 7 + [0,2,4][Math.floor(Math.random()*3)];
-      }else{
+      if(pos===0) useDeg = root + 7 + [0,2,4][Math.floor(Math.random()*3)];
+      else if(Math.random()<0.44) useDeg = root + 7 + [0,2,4][Math.floor(Math.random()*3)];
+      else {
         const pool=[-3,-2,-1,1,2,3];
         useDeg = deg + pool[Math.floor(Math.random()*pool.length)];
       }
@@ -1959,30 +2486,122 @@ function generateMelody(){
       while(pitch<PITCH_LOW && guard++<60){ useDeg+=scale.length; pitch=degreeToPitch(useDeg,scale); }
       if(pitch>PITCH_HIGH || pitch<PITCH_LOW){ useDeg=deg; pitch=degreeToPitch(useDeg,scale); }
       deg=useDeg;
-      out.push({ id:S.nextId++, pitch, start: bar*sBar + pos, length: dur.sub });
+      out.push({ pitch, start: bar*sBar + pos, length: dur.sub, root });
       pos += dur.sub;
     }
   }
   return out;
 }
-
 randomBtn.addEventListener('click',function(){
   stop();
-  const before=snapshot();
+  const before=snapshotAll();
   if(S.notes.length && !confirm('随机生成将替换当前旋律，继续吗？')) return;
-  S.notes=generateMelody();
+  S.notes = [];
+  let melodyTrack = S.tracks.find(t => t.name === '主旋律');
+  if(!melodyTrack){ melodyTrack = createTrack('主旋律', 'piano', 0); S.tracks.push(melodyTrack); }
+  let chordTrack = S.tracks.find(t => t.name === '和弦');
+  if(!chordTrack){ chordTrack = createTrack('和弦', 'strings', 1); chordTrack.volume = 0.55; S.tracks.push(chordTrack); }
+  let bassTrack = S.tracks.find(t => t.name === '低音');
+  if(!bassTrack){ bassTrack = createTrack('低音', 'bass', 2); bassTrack.volume = 0.7; S.tracks.push(bassTrack); }
+  const melodyData = generateMelody();
+  const sBar = subPerBar();
+  const PROGS = [[0,4,5,3],[0,5,3,4],[0,3,4,4],[5,3,0,4],[0,4,3,5],[0,5,1,4]];
+  const prog = PROGS[Math.floor(Math.random()*PROGS.length)];
+  const scale = (SCALES[S.scale]||SCALES.major).steps;
+  melodyData.forEach(d => {
+    S.notes.push({ id: S.nextId++, trackId: melodyTrack.id, pitch: d.pitch,
+                   start: d.start, length: d.length, velocity: 0.85 });
+  });
+  const bars = clamp(S.bars, 2, 16);
+  for(let bar=0; bar<bars; bar++){
+    const rootDeg = prog[bar%prog.length];
+    const rootPitch = degreeToPitch(rootDeg + 7, scale);
+    const intervals = (Math.random() < 0.4) ? [0,4,7,11] : [0,4,7];
+    const chordPitches = fitChord(rootPitch, intervals);
+    chordPitches.forEach(p => {
+      S.notes.push({ id: S.nextId++, trackId: chordTrack.id, pitch: p,
+                     start: bar*sBar, length: sBar, velocity: 0.55 });
+    });
+    const bassPitch = clamp(degreeToPitch(rootDeg, scale) - 12, PITCH_LOW, PITCH_HIGH);
+    S.notes.push({ id: S.nextId++, trackId: bassTrack.id, pitch: bassPitch,
+                   start: bar*sBar, length: Math.max(1, Math.floor(sBar * 0.9)), velocity: 0.75 });
+  }
   ensureCapacity(contentEnd()+subPerBar());
-  renderNotes();
+  renderTracks(); renderNotes();
   commitAction(before);
-  stageEl.scrollLeft=0;
-  setPlayhead(0, true);
+  stageEl.scrollLeft=0; setPlayhead(0, true);
 });
 
-/* =========================================================
-   项目管理
-   ========================================================= */
-const PROJ_KEY = 'melodygrid.projects';
+/* ★ 预设鼓轨：按当前拍号 / 小节数生成基础鼓点，自动套用「鼓组」音色 */
+const DRUM_PITCH = { kick:48, snare:50, hat:52, tom:53, crash:57 };
 
+function drumBeatNotes(){
+  const sBar     = subPerBar();                       /* 每小节 sub 数 */
+  const beat     = Math.max(1, unitSub());            /* 一拍的 sub 数 */
+  const half     = Math.max(1, Math.round(beat / 2)); /* 半拍 */
+  const hatStep  = half >= 4 ? half : beat;           /* 踩镲间隔：八分；拍很短时按拍 */
+  const bars     = clamp(S.bars, 1, 32);              /* 最多铺 32 小节，避免一次性生成过多音符 */
+  const beats    = Math.max(1, S.timeNum);
+  const list     = [];
+  const put = (pitch, start, length, vel) => list.push({pitch: pitch, start: start, length: length, vel: vel});
+  for(let b = 0; b < bars; b++){
+    const base = b * sBar;
+    /* 踩镲：每半拍一下（正拍重、反拍轻） */
+    for(let s = 0; s < sBar; s += hatStep){
+      put(DRUM_PITCH.hat, base + s, Math.max(1, Math.round(hatStep * 0.6)), s % beat === 0 ? 0.60 : 0.42);
+    }
+    /* 底鼓：第 1 拍（拍数 ≥3 时补第 3 拍） */
+    put(DRUM_PITCH.kick, base, beat, 0.95);
+    if(beats >= 3) put(DRUM_PITCH.kick, base + beat * 2, beat, 0.88);
+    /* 军鼓：第 2 拍（拍数 ≥4 时补第 4 拍） */
+    if(beats >= 2) put(DRUM_PITCH.snare, base + beat, beat, 0.85);
+    if(beats >= 4) put(DRUM_PITCH.snare, base + beat * 3, beat, 0.85);
+    /* 吊镲：每 4 小节一次（含开头） */
+    if(b % 4 === 0) put(DRUM_PITCH.crash, base, beat, 0.65);
+    /* 收尾：最后一小节的最后一拍用嗵鼓十六分加花 */
+    if(b === bars - 1){
+      const step = Math.max(1, Math.round(beat / 4));
+      const from = Math.max(0, sBar - beat);
+      for(let k = 0; k < 4; k++){
+        put(DRUM_PITCH.tom, base + from + k * step, step, 0.80 - k * 0.06);
+      }
+    }
+  }
+  return list;
+}
+
+function applyDrumPreset(){
+  const existing = S.tracks.filter(t => t.timbre === 'drumkit')[0] || null;
+  const oldCount = existing ? S.notes.filter(n => n.trackId === existing.id).length : 0;
+  if(!existing && S.tracks.length >= MAX_TRACKS){
+    alert('已达到轨道数量上限（' + MAX_TRACKS + '）');
+    return;
+  }
+  if(oldCount && !confirm('鼓组轨道「' + existing.name + '」已有 ' + oldCount + ' 个音符，用预设鼓点替换吗？')) return;
+  stop();
+  const before = snapshotAll();
+  let track = existing;
+  if(!track){
+    track = createTrack('鼓组', 'drumkit', S.tracks.length);
+    track.volume = 0.85; track.pan = 0; track.reverb = TIMBRES.drumkit.reverb;
+    S.tracks.push(track);
+  }
+  if(oldCount) S.notes = S.notes.filter(n => n.trackId !== track.id);
+  const beatNotes = drumBeatNotes();
+  for(let i = 0; i < beatNotes.length; i++){
+    const e = beatNotes[i];
+    S.notes.push({ id: S.nextId++, trackId: track.id, pitch: e.pitch,
+                   start: e.start, length: e.length, velocity: e.vel });
+  }
+  S.activeTrackId = track.id;
+  ensureCapacity(contentEnd() + unitSub());
+  renderTracks(); renderNotes();
+  commitAction(before);
+  stageEl.scrollLeft = 0; setPlayhead(0, true);
+}
+drumBtn.addEventListener('click', applyDrumPreset);
+
+const PROJ_KEY = 'melodygrid.projects';
 function loadProjects(){
   try{ const s = localStorage.getItem(PROJ_KEY); return s ? JSON.parse(s) : {}; }
   catch(e){ return {}; }
@@ -1991,56 +2610,78 @@ function saveProjects(obj){
   try{ localStorage.setItem(PROJ_KEY, JSON.stringify(obj)); return true; }
   catch(e){ alert('保存失败：浏览器存储空间不足或已被禁用'); return false; }
 }
-
 function collectProject(){
   return {
-    v: 3,
-    notes: S.notes.map(n => ({ pitch: n.pitch, start: n.start, length: n.length })),
+    v: 4,
+    notes: S.notes.map(n => ({ trackId: n.trackId, pitch: n.pitch, start: n.start,
+                               length: n.length, velocity: n.velocity || 0.85 })),
+    tracks: S.tracks.map(t => ({ id: t.id, name: t.name, timbre: t.timbre,
+                                 volume: t.volume, pan: t.pan, reverb: t.reverb,
+                                 mute: t.mute, solo: t.solo, color: t.color })),
+    activeTrackId: S.activeTrackId,
     bars: S.bars, timeNum: S.timeNum, timeDen: S.timeDen,
-    bpm: S.bpm, timbre: S.timbre, scale: S.scale,
+    bpm: S.bpm, scale: S.scale,
     zoom: S.zoom, snap: S.snap, showJianpu: S.showJianpu,
     savedAt: Date.now()
   };
 }
-
 function applyProject(p){
   if(!p || !Array.isArray(p.notes)) throw new Error('项目数据格式无效');
   stop();
+  if(Array.isArray(p.tracks) && p.tracks.length){
+    S.tracks = p.tracks.map(t => ({
+      id: clamp(Math.round(t.id)||1, 1, 9999),
+      name: String(t.name || '轨道').slice(0, 30),
+      timbre: TIMBRES[t.timbre] ? t.timbre : 'piano',
+      volume: clamp(Number(t.volume)||0.8, 0, 1),
+      pan: clamp(Number(t.pan)||0, -1, 1),
+      reverb: clamp(Number(t.reverb)||0.3, 0, 1),
+      mute: !!t.mute, solo: !!t.solo,
+      color: t.color || TRACK_COLORS[(t.id-1) % TRACK_COLORS.length]
+    }));
+    S.nextTrackId = S.tracks.reduce((m,t)=>Math.max(m,t.id),0) + 1;
+    S.activeTrackId = p.activeTrackId && getTrack(p.activeTrackId) ? p.activeTrackId : S.tracks[0].id;
+  }else{
+    S.tracks = [createTrack('主旋律', p.timbre || 'piano', 0)];
+    S.nextTrackId = 2;
+    S.activeTrackId = S.tracks[0].id;
+  }
+  const validIds = S.tracks.map(t=>t.id);
+  const defaultTrackId = S.activeTrackId;
   S.nextId = 1;
   S.notes = p.notes.map(n => ({
     id: S.nextId++,
+    trackId: validIds.indexOf(n.trackId) >= 0 ? n.trackId : defaultTrackId,
     pitch: clamp(Math.round(Number(n.pitch) || 60), PITCH_LOW, PITCH_HIGH),
     start: Math.max(0, Math.round(Number(n.start) || 0)),
-    length: Math.max(1, Math.round(Number(n.length) || 8))
+    length: Math.max(1, Math.round(Number(n.length) || 8)),
+    velocity: clamp(Number(n.velocity) || 0.85, 0.05, 1)
   }));
   S.bars    = clamp(Math.round(p.bars) || 8, 1, MAX_BARS);
   S.timeNum = clamp(Math.round(p.timeNum) || 4, 1, 32);
   S.timeDen = clamp(Math.round(p.timeDen) || 4, 1, 32);
   S.bpm     = clamp(Math.round(p.bpm) || 120, 40, 240);
-  S.timbre  = TIMBRES[p.timbre] ? p.timbre : 'piano';
   S.scale   = SCALES[p.scale] ? p.scale : 'major';
   S.zoom    = clamp(Number(p.zoom) || 1, 0.5, 2);
   S.snap    = clamp(Math.round(p.snap) || 2, 1, 8);
   S.showJianpu = p.showJianpu !== false;
-  bpmInput.value = S.bpm;
-  barsInput.value = S.bars;
-  timbreSel.value = S.timbre;
-  scaleSelect.value = S.scale;
-  snapSelect.value = String(S.snap);
-  jpToggle.checked = S.showJianpu;
-  zoomRange.value = S.zoom;
+  bpmInput.value = S.bpm; barsInput.value = S.bars;
+  scaleSelect.value = S.scale; snapSelect.value = String(S.snap);
+  jpToggle.checked = S.showJianpu; zoomRange.value = S.zoom;
   zoomLabel.textContent = (Math.round(S.zoom*100)/100) + '×';
   syncTimeSigSelect();
-  updateMetrics();
-  rebuildRows();
-  rebuildTimeline();
-  renderNotes();
-  setPlayhead(0, true);
-  stageEl.scrollLeft = 0;
-  undoStack.length = 0;
-  updateUndoBtn();
+  if(audioGraph){
+    Object.keys(audioGraph.trackNodes).forEach(id => {
+      const n = audioGraph.trackNodes[id];
+      try{ n.gain.disconnect(); n.pan.disconnect(); n.reverbSend.disconnect(); }catch(e){}
+    });
+    audioGraph.trackNodes = {};
+  }
+  updateMetrics(); rebuildRows(); rebuildTimeline();
+  renderTracks(); renderNotes();
+  setPlayhead(0, true); stageEl.scrollLeft = 0;
+  undoStack.length = 0; updateUndoBtn();
 }
-
 function renderProjects(){
   const projects = loadProjects();
   const names = Object.keys(projects).sort((a,b) =>
@@ -2050,8 +2691,7 @@ function renderProjects(){
     const empty = document.createElement('div');
     empty.className = 'proj-empty';
     empty.innerHTML = '暂无保存的项目<br>输入名称后点击"保存"';
-    projList.appendChild(empty);
-    return;
+    projList.appendChild(empty); return;
   }
   names.forEach(name => {
     const p = projects[name];
@@ -2060,44 +2700,36 @@ function renderProjects(){
     const info = document.createElement('div');
     info.className = 'proj-info';
     const nm = document.createElement('div');
-    nm.className = 'proj-row-name';
-    nm.textContent = name;
+    nm.className = 'proj-row-name'; nm.textContent = name;
     const meta = document.createElement('div');
     meta.className = 'proj-meta';
     const d = new Date(p.savedAt || Date.now());
     const tsStr = d.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
     const sig = p.timeNum && p.timeDen ? (p.timeNum+'/'+p.timeDen) : '4/4';
-    meta.textContent = (p.notes ? p.notes.length : 0) + ' 音符 · ' +
+    const trackCount = (p.tracks && p.tracks.length) || 1;
+    meta.textContent = trackCount + ' 轨 · ' + (p.notes ? p.notes.length : 0) + ' 音符 · ' +
                        (p.bars || 0) + ' 小节 · ' + sig + ' · ' + tsStr;
-    info.appendChild(nm);
-    info.appendChild(meta);
+    info.appendChild(nm); info.appendChild(meta);
     const actions = document.createElement('div');
     actions.className = 'proj-actions';
     const loadBtn = document.createElement('button');
-    loadBtn.className = 'proj-mini';
-    loadBtn.textContent = '加载';
+    loadBtn.className = 'proj-mini'; loadBtn.textContent = '加载';
     loadBtn.addEventListener('click', () => {
       try{ applyProject(p); closeProjects(); }
       catch(err){ alert('加载失败：' + err.message); }
     });
     const delBtn = document.createElement('button');
-    delBtn.className = 'proj-mini danger';
-    delBtn.textContent = '删除';
+    delBtn.className = 'proj-mini danger'; delBtn.textContent = '删除';
     delBtn.addEventListener('click', () => {
       if(!confirm('删除项目「' + name + '」？此操作不可恢复。')) return;
-      const all = loadProjects();
-      delete all[name];
-      saveProjects(all);
-      renderProjects();
+      const all = loadProjects(); delete all[name];
+      saveProjects(all); renderProjects();
     });
-    actions.appendChild(loadBtn);
-    actions.appendChild(delBtn);
-    row.appendChild(info);
-    row.appendChild(actions);
+    actions.appendChild(loadBtn); actions.appendChild(delBtn);
+    row.appendChild(info); row.appendChild(actions);
     projList.appendChild(row);
   });
 }
-
 function openProjects(){
   renderProjects();
   projModal.classList.add('open');
@@ -2143,9 +2775,7 @@ projExportBtn.addEventListener('click', function(){
   const a = document.createElement('a');
   a.href = url;
   a.download = (data.name.replace(/[\\/:*?"<>|]/g,'_') || 'melody') + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url), 1500);
 });
 projImportBtn.addEventListener('click', () => projFileInput.click());
@@ -2158,75 +2788,57 @@ projFileInput.addEventListener('change', function(){
       const data = JSON.parse(reader.result);
       applyProject(data);
       if(data.name) projName.value = data.name;
-      renderProjects();
-      closeProjects();
+      renderProjects(); closeProjects();
     }catch(err){ alert('导入失败：' + err.message); }
   };
   reader.readAsText(f);
   this.value = '';
 });
 
-/* =========================================================
-   AI 作曲 — 全参数控制
-   ========================================================= */
 const AI_STORAGE_KEY = 'melodygrid.deepseek.key';
 const AI_MODEL_KEY   = 'melodygrid.deepseek.model';
 let aiHistory = [];
 let aiBusy = false;
-
 try{
   const savedKey = localStorage.getItem(AI_STORAGE_KEY);
   if(savedKey) aiKey.value = savedKey;
   const savedModel = localStorage.getItem(AI_MODEL_KEY);
   if(savedModel) aiModel.value = savedModel;
 }catch(e){}
-
 aiKey.addEventListener('change',()=>{ try{ localStorage.setItem(AI_STORAGE_KEY, aiKey.value.trim()); }catch(e){} });
 aiKey.addEventListener('blur',()=>{ try{ localStorage.setItem(AI_STORAGE_KEY, aiKey.value.trim()); }catch(e){} });
 aiModel.addEventListener('change',()=>{ try{ localStorage.setItem(AI_MODEL_KEY, aiModel.value); }catch(e){} });
 
 const QUICK_PROMPTS = [
-  { label:'欢快 C 大调',    text:'写一段欢快的 C 大调旋律，4/4 拍，BPM 128，钢琴音色，8 小节' },
-  { label:'3/4 圆舞曲',     text:'写一段维也纳风格的 3/4 拍圆舞曲，BPM 168，弦乐音色，12 小节' },
-  { label:'忧伤小调',       text:'写一段忧伤的 A 小调旋律，BPM 72，氛围音色，A 自然小调音阶' },
-  { label:'中国风',         text:'用 C 五声音阶写一段中国风旋律，BPM 88，长笛音色，8 小节' },
-  { label:'爵士摇摆',       text:'用 D 多利亚音阶写一段爵士摇摆旋律，BPM 132，电钢音色，带七和弦伴奏' },
-  { label:'电子舞曲',       text:'写一段电子舞曲，BPM 128，合成器音色，C 大调，带低音和和弦' },
-  { label:'电影配乐',       text:'写一段电影配乐感的旋律，BPM 84，氛围音色，A 和声小调，12 小节' },
-  { label:'随机惊喜',       text:'你自己选一个合适的拍号、BPM、音色和音阶，创作一段完整的 8 小节旋律' }
+  { label:'钢琴独奏', text:'写一段欢快的 C 大调钢琴独奏旋律，4/4 拍，BPM 128，8 小节' },
+  { label:'弦乐伴奏', text:'写一段旋律，用钢琴演奏主旋律，弦乐做和弦伴奏，BPM 88，8 小节' },
+  { label:'爵士三重奏', text:'写一段爵士三重奏：钢琴旋律、贝斯低音、和弦伴奏，BPM 132，D 多利亚音阶' },
+  { label:'电影配乐', text:'写一段电影配乐感的音乐，氛围音色铺底 + 长笛主旋律 + 弦乐和弦，BPM 84' },
+  { label:'电子舞曲', text:'写一段电子舞曲，合成器主旋律 + 贝斯低音 + 和弦垫，BPM 128，8 小节' },
+  { label:'中国风', text:'用 C 五声音阶写一段中国风，长笛主旋律 + 弦乐和弦，BPM 88' }
 ];
-
 QUICK_PROMPTS.forEach(item=>{
   const b=document.createElement('button');
   b.textContent=item.label;
-  b.addEventListener('click',()=>{
-    aiInput.value = item.text;
-    aiInput.focus();
-  });
+  b.addEventListener('click',()=>{ aiInput.value = item.text; aiInput.focus(); });
   aiQuick.appendChild(b);
 });
-
 function openAI(){
   aiPanel.classList.add('open');
   aiBackdrop.classList.add('open');
   if(!aiMessages.children.length){
     addAIMessage('system',
       '👋 我是 AI 作曲助手，可以控制整个工程：\n' +
-      '· 旋律音符 · BPM · 拍号 · 小节数\n' +
-      '· 音色 · 音阶 · 视图缩放 · 吸附精度\n' +
-      '用自然语言描述即可，例如"来一段 90 BPM 的爵士圆舞曲"。');
+      '· 多轨创作（旋律、和弦、低音等）\n' +
+      '· 每轨独立音色、音量、声像、混响\n' +
+      '· 旋律音符 · BPM · 拍号 · 音阶');
   }
   setTimeout(()=>aiInput.focus(), 300);
 }
-function closeAI(){
-  aiPanel.classList.remove('open');
-  aiBackdrop.classList.remove('open');
-}
-
+function closeAI(){ aiPanel.classList.remove('open'); aiBackdrop.classList.remove('open'); }
 aiBtn.addEventListener('click',()=>{ aiPanel.classList.contains('open') ? closeAI() : openAI(); });
 aiClose.addEventListener('click', closeAI);
 aiBackdrop.addEventListener('click', closeAI);
-
 function addAIMessage(role, text, isThinking){
   const div=document.createElement('div');
   div.className='ai-msg ' + role + (isThinking ? ' thinking' : '');
@@ -2235,11 +2847,10 @@ function addAIMessage(role, text, isThinking){
   aiMessages.scrollTop = aiMessages.scrollHeight;
   return div;
 }
-
-function addAppliedBadge(container, noteCount, settingsChanges){
+function addAppliedBadge(container, noteCount, trackCount, settingsChanges){
   const badge=document.createElement('div');
   badge.className='ai-applied';
-  let html = '✓ 写入 ' + noteCount + ' 个音符';
+  let html = '✓ 写入 ' + noteCount + ' 个音符 · ' + trackCount + ' 轨';
   if(settingsChanges && settingsChanges.length){
     html += ' · ' + settingsChanges.map(c => '<span class="tag">' + c + '</span>').join('');
   }
@@ -2247,97 +2858,55 @@ function addAppliedBadge(container, noteCount, settingsChanges){
   container.appendChild(badge);
   aiMessages.scrollTop = aiMessages.scrollHeight;
 }
-
 function buildSystemPrompt(){
   const scaleDef = SCALES[S.scale] || SCALES.major;
-  const scalePitches = [];
-  for(let oct=0; oct<3; oct++){
-    for(let i=0;i<scaleDef.steps.length;i++){
-      const p = 60 + oct*12 + scaleDef.steps[i];
-      if(p >= PITCH_LOW && p <= PITCH_HIGH) scalePitches.push(p);
-    }
-  }
-  const scaleList = scalePitches.map(p => noteName(p) + '(' + p + ')').join(', ');
-  const timbreList = Object.keys(TIMBRES)
-    .map(k => k + '(' + TIMBRES[k].label + ')').join('、');
-  const scaleNameList = Object.keys(SCALES)
-    .map(k => k + '(' + SCALES[k].label + ')').join('、');
-  const chordList = CHORDS.map(c =>
-    c.label + '[id:' + c.id + ' 半音:' + c.intervals.join(',') + ']').join('、');
-
+  const timbreList = Object.keys(TIMBRES).map(k => k + '(' + TIMBRES[k].label + ')').join('、');
+  const scaleNameList = Object.keys(SCALES).map(k => k + '(' + SCALES[k].label + ')').join('、');
   return [
-    '你是一位专业的 AI 作曲助手，服务于一个网格钢琴卷帘编辑器。',
-    '你不仅能创作旋律，还能控制整个工程的所有参数。',
+    '你是一位专业的 AI 作曲助手，服务于一个多轨网格钢琴卷帘编辑器。',
+    '你可以创作多轨音乐（旋律轨、和弦轨、低音轨等），每轨有独立音色。',
     '',
     '【当前工程状态】',
     '- BPM：' + S.bpm,
     '- 拍号：' + S.timeNum + '/' + S.timeDen,
     '- 小节数：' + S.bars,
-    '- 音色：' + S.timbre + '(' + (TIMBRES[S.timbre] ? TIMBRES[S.timbre].label : S.timbre) + ')',
     '- 音阶：' + S.scale + '(' + scaleDef.label + ')',
-    '- 视图缩放：' + S.zoom,
-    '- 吸附精度：' + S.snap + '（1=1/8拍, 2=1/4拍, 4=1/2拍, 8=1拍）',
-    '- 网格音域：MIDI ' + PITCH_LOW + ' (' + noteName(PITCH_LOW) + ') ~ ' +
-      PITCH_HIGH + ' (' + noteName(PITCH_HIGH) + ')',
+    '- 现有轨道：' + S.tracks.map(t => '"' + t.name + '"').join('、'),
+    '- 网格音域：MIDI ' + PITCH_LOW + ' (' + noteName(PITCH_LOW) + ') ~ ' + PITCH_HIGH + ' (' + noteName(PITCH_HIGH) + ')',
     '',
     '【输出格式 —— 必须严格遵守】',
     '只输出一个 JSON 对象，不要 markdown 代码块，不要任何额外文字。格式：',
-    '{"reply":"简短中文说明（30字以内）","settings":{...},"notes":[...]}',
+    '{"reply":"简短说明","settings":{...},"tracks":[...],"notes":[...]}',
     '',
-    '【settings 字段 —— 全部可选，只填需要修改的】',
-    '- bpm：40-240 整数',
-    '- timeNum：1-32（拍号分子）',
-    '- timeDen：1-32（拍号分母，常用 2/4/8/16）',
-    '- bars：1-999（小节数）',
-    '- timbre：音色 id，可选值 ' + timbreList,
-    '- scale：音阶 id，可选值 ' + scaleNameList,
-    '- zoom：0.5-2（视图缩放）',
-    '- snap：吸附，只能选 1 / 2 / 4 / 8',
+    '【settings 字段 —— 全部可选】',
+    '- bpm：40-240；timeNum：1-32；timeDen：1-32；bars：1-999',
+    '- scale：音阶 id，可选 ' + scaleNameList,
     '',
-    '如果用户没有明确提到某个参数，就不要修改它。',
-    '如果用户说"随机"或"你决定"，可以主动选择最合适的参数。',
+    '【tracks 字段 —— 可选】',
+    '每项：{"name":"轨道名","timbre":"音色id","volume":0.8,"pan":0,"reverb":0.3}',
+    '- timbre：可选 ' + timbreList,
+    '- 打击乐：kick(底鼓)/snare(军鼓)/hihat(踩镲)/tom(嗵鼓)/crash(吊镲) 是单一鼓件，音高只影响音色高低；',
+    '  drumkit(鼓组) 会按音级自动选鼓件：C=底鼓、D=军鼓、E=踩镲、F/G=嗵鼓、A=吊镲，写鼓轨时用 drumkit 更省事',
     '',
     '【notes 字段 —— 必填】',
-    '- pitch：MIDI 音高整数，' + PITCH_LOW + '~' + PITCH_HIGH + ' 之间',
-    '- start：起始位置，单位为「四分音符」，从 0 开始，允许小数',
-    '- dur：持续时长，单位恒为「四分音符」，常用 0.25/0.5/1/1.5/2/3/4',
-    '- notes 按 start 升序排列',
-    '- 和弦：多个音符 start 相同、pitch 不同即可',
+    '每项：{"track":0,"pitch":60,"start":0,"dur":1,"vel":0.85}',
+    '- track：轨道索引（从 0 开始），无 tracks 时可省略',
+    '- pitch：MIDI ' + PITCH_LOW + '~' + PITCH_HIGH,
+    '- start：起始位置（四分音符），从 0 开始',
+    '- dur：持续时长（四分音符）',
     '',
-    '【音符时值参考】',
-    '全音符=4，附点二分=3，二分=2，附点四分=1.5，四分=1，附点八分=0.75，',
-    '八分=0.5，十六分=0.25，三十二分=0.125',
-    '',
-    '【和弦参考】',
-    chordList,
-    '',
-    '【音乐理论】',
-    '- 本音阶可用音高：' + scaleList,
-    '- 常用和弦进行：I-V-vi-IV、I-vi-IV-V、ii-V-I、I-IV-V-I',
-    '- 旋律以级进为主、偶尔跳进；乐句间要有呼吸',
-    '- 慢歌适合 60-90 BPM，中速 100-120，快歌 130-180',
-    '- 圆舞曲用 3/4 拍，进行曲用 4/4 或 2/4，爵士摇摆用 4/4 带三连感',
-    '',
-    '【示例】',
-    '用户："来一段 90 BPM 的 3/4 拍爵士圆舞曲，用钟铃音色"',
-    '你应输出：',
-    '{"reply":"90BPM 3/4 拍爵士圆舞曲，钟铃音色","settings":{"bpm":90,"timeNum":3,"timeDen":4,"timbre":"bell"},"notes":[{"pitch":72,"start":0,"dur":1}, ...]}',
+    '【音符时值】全音符=4，二分=2，四分=1，八分=0.5，十六分=0.25',
     '',
     '请根据用户描述创作，保证旋律流畅、情感契合、参数合理。'
   ].join('\n');
 }
-
 async function callDeepSeek(){
   const key = aiKey.value.trim();
   if(!key) throw new Error('请先填写 DeepSeek API Key');
-  const messages = [{ role:'system', content: buildSystemPrompt() }]
-    .concat(aiHistory.slice(-8));
+  const messages = [{ role:'system', content: buildSystemPrompt() }].concat(aiHistory.slice(-8));
   const body = {
     model: aiModel.value || 'deepseek-chat',
-    messages: messages,
-    temperature: 0.95,
-    max_tokens: 4000,
-    stream: false,
+    messages, temperature: 0.95, max_tokens: 4000, stream: false,
     response_format: { type: 'json_object' }
   };
   let res;
@@ -2348,7 +2917,7 @@ async function callDeepSeek(){
       body: JSON.stringify(body)
     });
   }catch(netErr){
-    throw new Error('网络请求失败：' + netErr.message + '（请检查网络或跨域设置）');
+    throw new Error('网络请求失败：' + netErr.message);
   }
   if(!res.ok){
     let detail = '';
@@ -2358,16 +2927,13 @@ async function callDeepSeek(){
     }catch(e){ detail = await res.text().catch(()=> ''); }
     if(res.status === 401) throw new Error('API Key 无效或已过期（401）');
     if(res.status === 402) throw new Error('账户余额不足（402）');
-    if(res.status === 429) throw new Error('请求过于频繁，请稍后再试（429）');
+    if(res.status === 429) throw new Error('请求过于频繁（429）');
     throw new Error('API 错误 ' + res.status + '：' + String(detail).slice(0,180));
   }
   const data = await res.json();
-  if(!data.choices || !data.choices[0] || !data.choices[0].message){
-    throw new Error('返回数据异常');
-  }
+  if(!data.choices || !data.choices[0] || !data.choices[0].message) throw new Error('返回数据异常');
   return data.choices[0].message.content;
 }
-
 function parseAIJSON(s){
   if(!s) return null;
   let t = String(s).trim();
@@ -2378,129 +2944,107 @@ function parseAIJSON(s){
   if(i >= 0 && j > i) t = t.slice(i, j+1);
   try { return JSON.parse(t); } catch(e){ return null; }
 }
-
 function applyAISettings(settings){
   if(!settings || typeof settings !== 'object') return [];
   const changes = [];
-
   if(typeof settings.bpm === 'number' && isFinite(settings.bpm)){
     const v = clamp(Math.round(settings.bpm), 40, 240);
-    if(v !== S.bpm){
-      S.bpm = v;
-      bpmInput.value = v;
-      changes.push('BPM ' + v);
-      flashField(bpmField);
-    }
+    if(v !== S.bpm){ S.bpm = v; bpmInput.value = v; changes.push('BPM ' + v); flashField(bpmField); }
   }
   if(typeof settings.timeNum === 'number' && typeof settings.timeDen === 'number'){
     const n = clamp(Math.round(settings.timeNum), 1, 32);
     const d = clamp(Math.round(settings.timeDen), 1, 32);
     if(n !== S.timeNum || d !== S.timeDen){
-      S.timeNum = n;
-      S.timeDen = d;
-      syncTimeSigSelect();
-      changes.push('拍号 ' + n + '/' + d);
-      flashField(timeSigField);
+      S.timeNum = n; S.timeDen = d; syncTimeSigSelect();
+      changes.push('拍号 ' + n + '/' + d); flashField(timeSigField);
     }
   }
   if(typeof settings.bars === 'number' && isFinite(settings.bars)){
     const v = clamp(Math.round(settings.bars), 1, MAX_BARS);
-    if(v !== S.bars){
-      S.bars = v;
-      barsInput.value = v;
-      changes.push('小节 ' + v);
-      flashField(barsField);
-    }
-  }
-  if(typeof settings.timbre === 'string' && TIMBRES[settings.timbre]){
-    if(settings.timbre !== S.timbre){
-      S.timbre = settings.timbre;
-      timbreSel.value = settings.timbre;
-      changes.push('音色 ' + TIMBRES[settings.timbre].label);
-      flashField(timbreField);
-    }
+    if(v !== S.bars){ S.bars = v; barsInput.value = v; changes.push('小节 ' + v); flashField(barsField); }
   }
   if(typeof settings.scale === 'string' && SCALES[settings.scale]){
     if(settings.scale !== S.scale){
-      S.scale = settings.scale;
-      scaleSelect.value = settings.scale;
+      S.scale = settings.scale; scaleSelect.value = settings.scale;
       changes.push('音阶 ' + SCALES[settings.scale].label);
     }
   }
   if(typeof settings.zoom === 'number' && isFinite(settings.zoom)){
     const v = clamp(settings.zoom, 0.5, 2);
     if(Math.abs(v - S.zoom) > 0.001){
-      S.zoom = v;
-      zoomRange.value = v;
+      S.zoom = v; zoomRange.value = v;
       zoomLabel.textContent = (Math.round(v*100)/100) + '×';
-      changes.push('缩放 ' + v + '×');
-      flashField(zoomField);
-    }
-  }
-  if(typeof settings.snap === 'number' && isFinite(settings.snap)){
-    const raw = Math.round(settings.snap);
-    const valid = [1,2,4,8].indexOf(raw) >= 0 ? raw : 2;
-    if(valid !== S.snap){
-      S.snap = valid;
-      snapSelect.value = String(valid);
-      changes.push('吸附 1/' + (8 / valid * 2) + '拍');
-      flashField(snapField);
+      changes.push('缩放 ' + v + '×'); flashField(zoomField);
     }
   }
   return changes;
 }
-
 function flashField(el){
   if(!el) return;
-  el.classList.remove('ai-flash');
-  void el.offsetWidth;
+  el.classList.remove('ai-flash'); void el.offsetWidth;
   el.classList.add('ai-flash');
   setTimeout(() => el.classList.remove('ai-flash'), 1500);
 }
-
 function applyAIMelody(parsed){
-  if(!parsed || !Array.isArray(parsed.notes) || !parsed.notes.length){
-    throw new Error('AI 没有返回有效音符');
-  }
+  if(!parsed || !Array.isArray(parsed.notes) || !parsed.notes.length) throw new Error('AI 没有返回有效音符');
   stop();
-  const before = snapshot();
+  const before = snapshotAll();
   const settingsChanges = applyAISettings(parsed.settings);
+  let trackIds = [];
+  if(Array.isArray(parsed.tracks) && parsed.tracks.length){
+    S.tracks = [];
+    S.nextTrackId = 1;
+    parsed.tracks.forEach((t, i) => {
+      const timbre = (typeof t.timbre === 'string' && TIMBRES[t.timbre]) ? t.timbre : 'piano';
+      const newTrack = createTrack(String(t.name || ('轨道 ' + (i+1))).slice(0, 24), timbre, i);
+      newTrack.volume = clamp(Number(t.volume) || 0.8, 0, 1);
+      newTrack.pan = clamp(Number(t.pan) || 0, -1, 1);
+      newTrack.reverb = (typeof t.reverb === 'number') ? clamp(t.reverb, 0, 1) : TIMBRES[timbre].reverb;
+      S.tracks.push(newTrack);
+      trackIds.push(newTrack.id);
+    });
+    S.activeTrackId = trackIds[0];
+  }else{
+    const active = getActiveTrack();
+    if(!active){
+      const t = createTrack('主旋律', 'piano', 0);
+      S.tracks = [t]; S.activeTrackId = t.id;
+    }
+    trackIds = [getActiveTrack().id];
+  }
+  if(audioGraph){
+    Object.keys(audioGraph.trackNodes).forEach(id => {
+      const n = audioGraph.trackNodes[id];
+      try{ n.gain.disconnect(); n.pan.disconnect(); n.reverbSend.disconnect(); }catch(e){}
+    });
+    audioGraph.trackNodes = {};
+  }
   const list = [];
   for(let i=0;i<parsed.notes.length;i++){
     const n = parsed.notes[i];
     if(!n || typeof n.pitch === 'undefined') continue;
     const pitch = clamp(Math.round(Number(n.pitch)), PITCH_LOW, PITCH_HIGH);
     if(isNaN(pitch)) continue;
-    let startBeat = Number(n.start);
-    if(isNaN(startBeat) || startBeat < 0) startBeat = 0;
-    let durBeat = Number(n.dur);
-    if(isNaN(durBeat) || durBeat <= 0) durBeat = 1;
-    list.push({
-      id: S.nextId++,
-      pitch: pitch,
-      start: Math.max(0, Math.round(startBeat * SUB)),
-      length: Math.max(1, Math.round(durBeat * SUB))
-    });
+    let startBeat = Number(n.start); if(isNaN(startBeat) || startBeat < 0) startBeat = 0;
+    let durBeat = Number(n.dur); if(isNaN(durBeat) || durBeat <= 0) durBeat = 1;
+    const trackIdx = (typeof n.track === 'number') ? clamp(Math.round(n.track), 0, trackIds.length-1) : 0;
+    const vel = (typeof n.vel === 'number') ? clamp(n.vel, 0.05, 1) : 0.85;
+    list.push({ id: S.nextId++, trackId: trackIds[trackIdx], pitch,
+                start: Math.max(0, Math.round(startBeat * SUB)),
+                length: Math.max(1, Math.round(durBeat * SUB)), velocity: vel });
   }
   if(!list.length) throw new Error('AI 返回的音符无法解析');
   list.sort((a,b)=> a.start - b.start);
   S.notes = list;
   const needSubs = contentEnd() + subPerBar();
   const needBars = Math.ceil(needSubs / subPerBar());
-  if(needBars > S.bars){
-    S.bars = Math.min(needBars, MAX_BARS);
-    barsInput.value = S.bars;
-  }
-  updateMetrics();
-  rebuildRows();
-  rebuildTimeline();
-  renderNotes();
+  if(needBars > S.bars){ S.bars = Math.min(needBars, MAX_BARS); barsInput.value = S.bars; }
+  updateMetrics(); rebuildRows(); rebuildTimeline();
+  renderTracks(); renderNotes();
   commitAction(before);
-  stageEl.scrollLeft = 0;
-  setPlayhead(0, true);
-  return { noteCount: list.length, settingsChanges: settingsChanges };
+  stageEl.scrollLeft = 0; setPlayhead(0, true);
+  return { noteCount: list.length, trackCount: trackIds.length, settingsChanges };
 }
-
 async function aiSubmit(){
   if(aiBusy) return;
   const text = aiInput.value.trim();
@@ -2509,10 +3053,8 @@ async function aiSubmit(){
   aiInput.value = '';
   addAIMessage('user', text);
   aiHistory.push({ role:'user', content: text });
-  aiBusy = true;
-  aiSend.disabled = true;
-  aiSend.textContent = '生成中…';
-  const thinking = addAIMessage('assistant', '正在创作旋律并配置工程', true);
+  aiBusy = true; aiSend.disabled = true; aiSend.textContent = '生成中…';
+  const thinking = addAIMessage('assistant', '正在创作多轨音乐', true);
   try{
     const raw = await callDeepSeek();
     thinking.remove();
@@ -2521,7 +3063,7 @@ async function aiSubmit(){
     const result = applyAIMelody(parsed);
     const reply = parsed.reply || '已为你生成一段旋律';
     const bubble = addAIMessage('assistant', reply);
-    addAppliedBadge(bubble, result.noteCount, result.settingsChanges);
+    addAppliedBadge(bubble, result.noteCount, result.trackCount, result.settingsChanges);
     aiHistory.push({ role:'assistant', content: raw });
     if(aiHistory.length > 16) aiHistory = aiHistory.slice(-16);
   }catch(err){
@@ -2529,12 +3071,9 @@ async function aiSubmit(){
     addAIMessage('error', '❌ ' + (err.message || '生成失败'));
     aiHistory.pop();
   }finally{
-    aiBusy = false;
-    aiSend.disabled = false;
-    aiSend.textContent = '发送';
+    aiBusy = false; aiSend.disabled = false; aiSend.textContent = '发送';
   }
 }
-
 aiSend.addEventListener('click', aiSubmit);
 aiInput.addEventListener('keydown', function(e){
   if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); aiSubmit(); }
@@ -2543,72 +3082,46 @@ aiInput.addEventListener('keydown', function(e){
 aiInput.addEventListener('keyup', e => e.stopPropagation());
 aiKey.addEventListener('keydown', e => e.stopPropagation());
 
-/* 控件事件 */
 playBtn.addEventListener('click',()=>{ playState?stop():play(); });
 stopBtn.addEventListener('click',stop);
-
 rewindBtn.addEventListener('click',function(){
-  stop();
-  setPlayhead(0, true);
+  stop(); setPlayhead(0, true);
   stageEl.scrollTo({left:0,behavior:'smooth'});
 });
 undoBtn.addEventListener('click',undo);
-
 clearBtn.addEventListener('click',function(){
   if(!S.notes.length) return;
-  if(!confirm('清空全部音符？')) return;
+  if(!confirm('清空全部音符？（轨道保留）')) return;
   stop();
-  const before=snapshot();
-  S.notes=[];
-  renderNotes();
-  commitAction(before);
+  const before=snapshotAll();
+  S.notes=[]; renderNotes(); commitAction(before);
 });
-
 exportBtn.addEventListener('click',exportMIDI);
-
 bpmInput.addEventListener('change',function(){
-  S.bpm=clamp(parseInt(this.value,10)||120,40,240);
-  this.value=S.bpm;
+  S.bpm=clamp(parseInt(this.value,10)||120,40,240); this.value=S.bpm;
 });
 timeSigSel.addEventListener('change',function(){
   const parts = String(this.value).split('/');
   setTimeSig(parseInt(parts[0],10), parseInt(parts[1],10));
 });
-barsInput.addEventListener('change',function(){
-  setBars(parseInt(this.value,10)||8);
-});
-timbreSel.addEventListener('change',function(){ S.timbre=this.value; });
+barsInput.addEventListener('change',function(){ setBars(parseInt(this.value,10)||8); });
 snapSelect.addEventListener('change',function(){ S.snap=parseInt(this.value,10)||2; });
-jpToggle.addEventListener('change',function(){
-  S.showJianpu=this.checked;
-  renderNotes();
-});
+jpToggle.addEventListener('change',function(){ S.showJianpu=this.checked; renderNotes(); });
 zoomRange.addEventListener('input',function(){
-  if(playState) stop();
-  applyZoom(parseFloat(this.value));
+  if(playState) stop(); applyZoom(parseFloat(this.value));
 });
 metroInput.addEventListener('change',function(){ S.metronome=this.checked; });
 loopInput.addEventListener('change',function(){ S.loop=this.checked; });
 scaleSelect.addEventListener('change',function(){ S.scale=this.value; });
 
-/* 键盘快捷键 */
 window.addEventListener('keydown',function(e){
   const t=e.target;
   if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT')) return;
-
-  if(e.code==='Space'){
-    e.preventDefault();
-    playState?stop():play();
-  }else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){
-    e.preventDefault();
-    undo();
-  }else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
-    e.preventDefault();
-    openProjects();
-  }else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){
-    e.preventDefault();
-    exportMP3();
-  }else if(e.key==='Escape'){
+  if(e.code==='Space'){ e.preventDefault(); playState?stop():play(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); openProjects(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); exportMP3(); }
+  else if(e.key==='Escape'){
     if(chordMode){
       chordMode = null;
       const prev = chordGridEl.querySelector('.chord-btn.active');
@@ -2622,55 +3135,58 @@ window.addEventListener('keydown',function(e){
     }
     if(projModal.classList.contains('open')) closeProjects();
     else if(aiPanel.classList.contains('open')) closeAI();
-  }else if(e.key==='Home'){
-    e.preventDefault();
-    rewindBtn.click();
-  }else if(e.key.toLowerCase()==='j' && !e.ctrlKey && !e.metaKey){
+  }
+  else if(e.key==='Home'){ e.preventDefault(); rewindBtn.click(); }
+  else if(e.key.toLowerCase()==='j' && !e.ctrlKey && !e.metaKey){
     e.preventDefault();
     jpToggle.checked = !jpToggle.checked;
     jpToggle.dispatchEvent(new Event('change'));
-  }else if(e.key.toLowerCase()==='a' && (e.ctrlKey||e.metaKey) && e.shiftKey){
-    e.preventDefault();
-    openAI();
+  }
+  else if(e.key.toLowerCase()==='a' && (e.ctrlKey||e.metaKey) && e.shiftKey){
+    e.preventDefault(); openAI();
   }
 });
 
-/* 初始示例 */
 (function seed(){
+  const t1 = createTrack('主旋律', 'piano', 0);
+  const t2 = createTrack('和弦', 'strings', 1);
+  t2.volume = 0.55; t2.pan = -0.15; t2.reverb = 0.5;
+  const t3 = createTrack('低音', 'bass', 2);
+  t3.volume = 0.7; t3.pan = 0.1; t3.reverb = 0.15;
+  S.tracks = [t1, t2, t3];
+  S.nextTrackId = 4;
+  S.activeTrackId = t1.id;
   const raw = [
-    [72,0,1],[76,1,1],[79,2,2],
-    [77,4,1],[76,5,1],[74,6,2],
-    [72,8,4],
-    [79,12,1],[81,13,1],[83,14,1],[84,15,1],
-    [86,16,2],[84,18,1.5],[83,19.5,0.5],
-    [81,20,1],[79,21,1],[77,22,2],
-    [76,24,1],[77,25,1],[79,26,1],[81,27,1],
-    [83,28,4],
-    [60,0,4],[64,0,4],[67,0,4],
-    [65,4,4],[69,4,4],[72,4,4],
-    [60,8,4],[64,8,4],[67,8,4],
-    [67,12,2],[71,12,2],[74,12,2],
-    [72,16,2],[76,16,2],[79,16,2],
-    [72,18,2],[77,18,2],[81,18,2],
-    [74,20,2],[77,20,2],[81,20,2],
-    [67,22,2],[71,22,2],[74,22,2],
-    [72,24,4],[76,24,4],[79,24,4],
-    [72,28,4],[76,28,4],[79,28,4]
+    [72,0,1,0],[76,1,1,0],[79,2,2,0],
+    [77,4,1,0],[76,5,1,0],[74,6,2,0],
+    [72,8,4,0],
+    [79,12,1,0],[81,13,1,0],[83,14,1,0],[84,15,1,0],
+    [86,16,2,0],[84,18,1.5,0],[83,19.5,0.5,0],
+    [81,20,1,0],[79,21,1,0],[77,22,2,0],
+    [76,24,1,0],[77,25,1,0],[79,26,1,0],[81,27,1,0],
+    [83,28,4,0],
+    [60,0,4,1],[64,0,4,1],[67,0,4,1],
+    [65,4,4,1],[69,4,4,1],[72,4,4,1],
+    [60,8,4,1],[64,8,4,1],[67,8,4,1],
+    [67,12,4,1],[71,12,4,1],[74,12,4,1],
+    [72,16,4,1],[76,16,4,1],[79,16,4,1],
+    [74,20,4,1],[77,20,4,1],[81,20,4,1],
+    [72,24,4,1],[76,24,4,1],[79,24,4,1],
+    [72,28,4,1],[76,28,4,1],[79,28,4,1],
+    [48,0,4,2],[53,4,4,2],[48,8,4,2],[55,12,4,2],
+    [48,16,4,2],[50,20,4,2],[48,24,4,2],[48,28,4,2]
   ];
-  S.notes = raw.map(r=>{
-    return {
-      id: S.nextId++,
-      pitch: r[0],
-      start: Math.round(r[1]*SUB),
-      length: Math.max(1, Math.round(r[2]*SUB))
-    };
-  });
+  S.notes = raw.map(r => ({
+    id: S.nextId++,
+    trackId: [t1.id, t2.id, t3.id][r[3]],
+    pitch: clamp(r[0], PITCH_LOW, PITCH_HIGH),
+    start: Math.round(r[1]*SUB),
+    length: Math.max(1, Math.round(r[2]*SUB)),
+    velocity: r[3] === 0 ? 0.85 : (r[3] === 1 ? 0.55 : 0.75)
+  }));
   S.bars = 8;
-
-  updateMetrics();
-  rebuildRows();
-  rebuildTimeline();
-  renderNotes();
+  updateMetrics(); rebuildRows(); rebuildTimeline();
+  renderTracks(); renderNotes();
   updateUndoBtn();
   setPlayhead(0, true);
 })();
