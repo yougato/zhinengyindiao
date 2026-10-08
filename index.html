@@ -848,7 +848,7 @@ function setPlayhead(sub, show){
 
 function createTrack(name, timbre, colorIdx){
   const id = S.nextTrackId++;
-  const tm = TIMBRES[timbre] || TIMBRES.piano;
+  const tm = hasOwn(TIMBRES, timbre) ? TIMBRES[timbre] : TIMBRES.piano;
   return {
     id: id,
     name: name || ('轨道 ' + id),
@@ -899,13 +899,19 @@ DURS.forEach(d=>{
   durGridEl.appendChild(btn);
 });
 
+function setCurDur(id){
+  if(!hasOwn(DUR_BY_ID, id)) return false;
+  S.curDur = id;
+  Array.prototype.forEach.call(durGridEl.children, function(b){
+    b.classList.toggle('active', b.dataset.dur === id);
+  });
+  return true;
+}
+
 durGridEl.addEventListener('click',function(e){
   const btn=e.target.closest('.dur-btn');
   if(!btn) return;
-  S.curDur=btn.dataset.dur;
-  Array.prototype.forEach.call(durGridEl.children,function(b){
-    b.classList.toggle('active', b===btn);
-  });
+  setCurDur(btn.dataset.dur);
 });
 
 const CHIP_PITCHES = [];
@@ -1648,10 +1654,10 @@ function getNoiseBuffer(ctx){
 }
 /* 音色解析：带 map 的音色（鼓组）按音级映射到具体鼓音色 */
 function resolveTimbre(timbreId, pitch){
-  const def = TIMBRES[timbreId] || TIMBRES.piano;
+  const def = hasOwn(TIMBRES, timbreId) ? TIMBRES[timbreId] : TIMBRES.piano;
   if(def && def.map){
-    const sub = TIMBRES[def.map[pc(pitch)]];
-    if(sub) return sub;
+    const key = def.map[pc(pitch)];
+    if(hasOwn(TIMBRES, key)) return TIMBRES[key];
   }
   return def;
 }
@@ -2497,12 +2503,21 @@ randomBtn.addEventListener('click',function(){
   const before=snapshotAll();
   if(S.notes.length && !confirm('随机生成将替换当前旋律，继续吗？')) return;
   S.notes = [];
-  let melodyTrack = S.tracks.find(t => t.name === '主旋律');
-  if(!melodyTrack){ melodyTrack = createTrack('主旋律', 'piano', 0); S.tracks.push(melodyTrack); }
-  let chordTrack = S.tracks.find(t => t.name === '和弦');
-  if(!chordTrack){ chordTrack = createTrack('和弦', 'strings', 1); chordTrack.volume = 0.55; S.tracks.push(chordTrack); }
-  let bassTrack = S.tracks.find(t => t.name === '低音');
-  if(!bassTrack){ bassTrack = createTrack('低音', 'bass', 2); bassTrack.volume = 0.7; S.tracks.push(bassTrack); }
+  /* 轨道数达上限时不再新增，改为复用现有轨道 */
+  const addOrReuse = (name, timbre, colorIdx, fallbackIdx, tune) => {
+    const found = S.tracks.filter(t => t.name === name)[0];
+    if(found) return found;
+    if(S.tracks.length >= MAX_TRACKS && S.tracks.length){
+      return S.tracks[Math.min(fallbackIdx, S.tracks.length - 1)];
+    }
+    const t = createTrack(name, timbre, colorIdx);
+    if(tune) tune(t);
+    S.tracks.push(t);
+    return t;
+  };
+  const melodyTrack = addOrReuse('主旋律', 'piano', 0, 0, null);
+  const chordTrack  = addOrReuse('和弦', 'strings', 1, 1, t => { t.volume = 0.55; });
+  const bassTrack   = addOrReuse('低音', 'bass', 2, 2, t => { t.volume = 0.7; });
   const melodyData = generateMelody();
   const sBar = subPerBar();
   const PROGS = [[0,4,5,3],[0,5,3,4],[0,3,4,4],[5,3,0,4],[0,4,3,5],[0,5,1,4]];
@@ -2632,17 +2647,17 @@ function applyProject(p){
     S.tracks = p.tracks.map(t => ({
       id: clamp(Math.round(t.id)||1, 1, 9999),
       name: String(t.name || '轨道').slice(0, 30),
-      timbre: TIMBRES[t.timbre] ? t.timbre : 'piano',
+      timbre: hasOwn(TIMBRES, t.timbre) ? t.timbre : 'piano',
       volume: clamp(Number(t.volume)||0.8, 0, 1),
       pan: clamp(Number(t.pan)||0, -1, 1),
       reverb: clamp(Number(t.reverb)||0.3, 0, 1),
       mute: !!t.mute, solo: !!t.solo,
-      color: t.color || TRACK_COLORS[(t.id-1) % TRACK_COLORS.length]
+      color: safeColor(t.color) || TRACK_COLORS[(t.id-1) % TRACK_COLORS.length]
     }));
     S.nextTrackId = S.tracks.reduce((m,t)=>Math.max(m,t.id),0) + 1;
     S.activeTrackId = p.activeTrackId && getTrack(p.activeTrackId) ? p.activeTrackId : S.tracks[0].id;
   }else{
-    S.tracks = [createTrack('主旋律', p.timbre || 'piano', 0)];
+    S.tracks = [createTrack('主旋律', hasOwn(TIMBRES, p.timbre) ? p.timbre : 'piano', 0)];
     S.nextTrackId = 2;
     S.activeTrackId = S.tracks[0].id;
   }
@@ -2661,9 +2676,9 @@ function applyProject(p){
   S.timeNum = clamp(Math.round(p.timeNum) || 4, 1, 32);
   S.timeDen = clamp(Math.round(p.timeDen) || 4, 1, 32);
   S.bpm     = clamp(Math.round(p.bpm) || 120, 40, 240);
-  S.scale   = SCALES[p.scale] ? p.scale : 'major';
+  S.scale   = hasOwn(SCALES, p.scale) ? p.scale : 'major';
   S.zoom    = clamp(Number(p.zoom) || 1, 0.5, 2);
-  S.snap    = clamp(Math.round(p.snap) || 2, 1, 8);
+  S.snap    = SNAP_VALUES.indexOf(Math.round(p.snap)) >= 0 ? Math.round(p.snap) : 2;
   S.showJianpu = p.showJianpu !== false;
   bpmInput.value = S.bpm; barsInput.value = S.bars;
   scaleSelect.value = S.scale; snapSelect.value = String(S.snap);
@@ -2828,10 +2843,10 @@ function openAI(){
   aiBackdrop.classList.add('open');
   if(!aiMessages.children.length){
     addAIMessage('system',
-      '👋 我是 AI 作曲助手，可以控制整个工程：\n' +
-      '· 多轨创作（旋律、和弦、低音等）\n' +
-      '· 每轨独立音色、音量、声像、混响\n' +
-      '· 旋律音符 · BPM · 拍号 · 音阶');
+      '👋 我是 AI 作曲助手，可以修改工程里的任何参数：\n' +
+      '· 多轨创作，或增量修改现有轨道（音色、音量、声像、混响、静音、独奏、增删轨道）\n' +
+      '· 音符可整体替换，也可追加；能直接写鼓轨\n' +
+      '· BPM · 拍号 · 小节 · 音阶 · 吸附 · 缩放 · 简谱 · 节拍器 · 循环 · 画笔时值');
   }
   setTimeout(()=>aiInput.focus(), 300);
 }
@@ -2847,12 +2862,18 @@ function addAIMessage(role, text, isThinking){
   aiMessages.scrollTop = aiMessages.scrollHeight;
   return div;
 }
-function addAppliedBadge(container, noteCount, trackCount, settingsChanges){
+function escapeHTML(s){
+  return String(s).replace(/[&<>"']/g, ch => (
+    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]
+  ));
+}
+function addAppliedBadge(container, noteCount, trackCount, settingsChanges, noteText){
   const badge=document.createElement('div');
   badge.className='ai-applied';
-  let html = '✓ 写入 ' + noteCount + ' 个音符 · ' + trackCount + ' 轨';
+  const head = noteText || (noteCount ? ('写入 ' + noteCount + ' 个音符') : '未改动音符');
+  let html = '✓ ' + head + ' · 共 ' + trackCount + ' 轨';
   if(settingsChanges && settingsChanges.length){
-    html += ' · ' + settingsChanges.map(c => '<span class="tag">' + c + '</span>').join('');
+    html += ' · ' + settingsChanges.map(c => '<span class="tag">' + escapeHTML(c) + '</span>').join('');
   }
   badge.innerHTML = html;
   container.appendChild(badge);
@@ -2862,42 +2883,71 @@ function buildSystemPrompt(){
   const scaleDef = SCALES[S.scale] || SCALES.major;
   const timbreList = Object.keys(TIMBRES).map(k => k + '(' + TIMBRES[k].label + ')').join('、');
   const scaleNameList = Object.keys(SCALES).map(k => k + '(' + SCALES[k].label + ')').join('、');
+  const durList = DURS.map(d => d.id + '(' + d.name + ')').join('、');
+  const curDurDef = DUR_BY_ID[S.curDur] || DUR_BY_ID.q;
+  const trackLines = S.tracks.map((t, i) => {
+    const def = TIMBRES[t.timbre];
+    return '  ' + i + ': "' + t.name + '" | ' + t.timbre + '(' + (def ? def.label : '未知') + ')' +
+           ' | 音量 ' + t.volume.toFixed(2) + ' | 声像 ' + t.pan.toFixed(2) +
+           ' | 混响 ' + t.reverb.toFixed(2) + ' | 静音 ' + (t.mute ? '是' : '否') +
+           ' | 独奏 ' + (t.solo ? '是' : '否') +
+           ' | 音符 ' + S.notes.filter(n => n.trackId === t.id).length;
+  }).join('\n');
   return [
     '你是一位专业的 AI 作曲助手，服务于一个多轨网格钢琴卷帘编辑器。',
-    '你可以创作多轨音乐（旋律轨、和弦轨、低音轨等），每轨有独立音色。',
+    '你既能创作音乐，也能调整工程里的任何参数（轨道增删改、各类开关与画笔状态）。',
     '',
     '【当前工程状态】',
-    '- BPM：' + S.bpm,
-    '- 拍号：' + S.timeNum + '/' + S.timeDen,
-    '- 小节数：' + S.bars,
+    '- BPM：' + S.bpm + '；拍号：' + S.timeNum + '/' + S.timeDen + '；小节数：' + S.bars,
     '- 音阶：' + S.scale + '(' + scaleDef.label + ')',
-    '- 现有轨道：' + S.tracks.map(t => '"' + t.name + '"').join('、'),
+    '- 吸附：' + snapLabel(S.snap) + '；缩放：' + (Math.round(S.zoom * 100) / 100) + '×；输入时值：' + S.curDur + '(' + curDurDef.name + ')',
+    '- 简谱显示：' + (S.showJianpu ? '开' : '关') + '；节拍器：' + (S.metronome ? '开' : '关') + '；循环播放：' + (S.loop ? '开' : '关'),
     '- 网格音域：MIDI ' + PITCH_LOW + ' (' + noteName(PITCH_LOW) + ') ~ ' + PITCH_HIGH + ' (' + noteName(PITCH_HIGH) + ')',
+    '- 轨道列表（索引: 名称 | 音色 | 音量 | 声像 | 混响 | 静音 | 独奏 | 音符数）：',
+    trackLines || '  （无轨道）',
     '',
     '【输出格式 —— 必须严格遵守】',
     '只输出一个 JSON 对象，不要 markdown 代码块，不要任何额外文字。格式：',
-    '{"reply":"简短说明","settings":{...},"tracks":[...],"notes":[...]}',
+    '{"reply":"简短说明","settings":{...},"tracksMode":"replace|merge","tracks":[...],"notesMode":"replace|append","notes":[...]}',
+    'settings / tracks / notes 都是可选的，可以只改参数不写音符。',
     '',
     '【settings 字段 —— 全部可选】',
-    '- bpm：40-240；timeNum：1-32；timeDen：1-32；bars：1-999',
+    '- bpm：40-240',
+    '- timeNum / timeDen：1-32；也可写 timeSig："3/4"',
+    '- bars：1-999',
     '- scale：音阶 id，可选 ' + scaleNameList,
+    '- snap：吸附，1 / 2 / 4 / 8（1=1/8 拍、2=1/4 拍、4=1/2 拍、8=1 拍）',
+    '- zoom：谱面缩放 0.5-2',
+    '- curDur：画笔时值 id，可选 ' + durList,
+    '- showJianpu / metronome / loop：true / false',
+    '- activeTrack：数字（轨道索引）或轨道名，指定当前编辑轨',
     '',
     '【tracks 字段 —— 可选】',
-    '每项：{"name":"轨道名","timbre":"音色id","volume":0.8,"pan":0,"reverb":0.3}',
+    '默认 replace：用数组重建全部轨道（1-' + MAX_TRACKS + ' 条），并清空现有音符；',
+    'tracksMode:"merge" 则按 id 或 name 匹配现有轨道做增量修改，匹配不到则新建（保留其它轨道与音符）。',
+    '每项：{"id":0,"name":"轨道名","timbre":"音色id","volume":0.8,"pan":0,"reverb":0.3,"mute":false,"solo":false,"color":"#4a7dff"}',
+    '- {"delete":true}：删除匹配到的轨道（仅 tracksMode:"merge" 下有效；工程至少保留 1 条）',
+    '- color：十六进制 #rrggbb；也可用 colorIndex：0-' + (TRACK_COLORS.length - 1),
     '- timbre：可选 ' + timbreList,
     '- 打击乐：kick(底鼓)/snare(军鼓)/hihat(踩镲)/tom(嗵鼓)/crash(吊镲) 是单一鼓件，音高只影响音色高低；',
-    '  drumkit(鼓组) 会按音级自动选鼓件：C=底鼓、D=军鼓、E=踩镲、F/G=嗵鼓、A=吊镲，写鼓轨时用 drumkit 更省事',
+    '  drumkit(鼓组) 按音级自动选鼓件：C=底鼓、D=军鼓、E=踩镲、F/G=嗵鼓、A=吊镲，写鼓轨时用 drumkit 更省事',
     '',
-    '【notes 字段 —— 必填】',
+    '【notes 字段 —— 可选】',
+    '默认 replace：替换全部音符；notesMode:"append" 时把新音符追加到末尾（若同时用了默认的整轨重建，旧音符已先被清空）。',
+    'tracksMode:"merge" 且未写 notesMode 时按追加处理，不会删除已有音符；确实要整体重写音符时请显式写 notesMode:"replace"。',
     '每项：{"track":0,"pitch":60,"start":0,"dur":1,"vel":0.85}',
-    '- track：轨道索引（从 0 开始），无 tracks 时可省略',
+    '- track：轨道索引。返回了 tracks 时为 tracks 数组下标；未返回 tracks 时为上方轨道列表索引；省略则写入当前活动轨',
     '- pitch：MIDI ' + PITCH_LOW + '~' + PITCH_HIGH,
     '- start：起始位置（四分音符），从 0 开始',
     '- dur：持续时长（四分音符）',
+    '- vel：0.05-1.0，默认 0.85',
     '',
     '【音符时值】全音符=4，二分=2，四分=1，八分=0.5，十六分=0.25',
     '',
-    '请根据用户描述创作，保证旋律流畅、情感契合、参数合理。'
+    '【行为要求】',
+    '- 用户只要求改参数 / 换音色 / 调音量 / 加鼓点时：用 settings 配合 tracksMode:"merge"、notesMode:"append"，不要重写整曲，也不要清空已有音符。',
+    '- 默认的 replace 会连音符一起重建，只有在用户明确要求"重写 / 重新创作 / 换一首"时才使用。',
+    '- 写鼓轨用 drumkit 音色，音高取低音区的 C/D/E/F/G/A。'
   ].join('\n');
 }
 async function callDeepSeek(){
@@ -2944,6 +2994,98 @@ function parseAIJSON(s){
   if(i >= 0 && j > i) t = t.slice(i, j+1);
   try { return JSON.parse(t); } catch(e){ return null; }
 }
+/* ★ AI 权限扩展：所有来自模型的值都经白名单 / 范围校验后再写入工程状态 */
+const SNAP_VALUES = [1, 2, 4, 8];
+const AI_MAX_NOTES = 6000;                 /* 单次写入音符上限，防止超长输出卡死页面 */
+const SAFE_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+
+/* 只认自有属性：避免 "constructor" / "__proto__" / "valueOf" 之类原型链键名通过白名单 */
+function hasOwn(obj, key){
+  return !!obj && typeof key === 'string' && Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function nearestSnap(v){
+  let best = SNAP_VALUES[0];
+  for(let i = 0; i < SNAP_VALUES.length; i++){
+    if(Math.abs(SNAP_VALUES[i] - v) < Math.abs(best - v)) best = SNAP_VALUES[i];
+  }
+  return best;
+}
+function snapLabel(v){
+  const map = { 8:'1 拍', 4:'1/2 拍', 2:'1/4 拍', 1:'1/8 拍' };
+  return map[v] || (v + ' 分');
+}
+function safeText(s, max){
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max || 24);
+}
+function safeColor(c){
+  return (typeof c === 'string' && SAFE_COLOR_RE.test(c.trim())) ? c.trim().toLowerCase() : null;
+}
+function aiFindTrack(spec){
+  if(!spec || typeof spec !== 'object') return null;
+  if(typeof spec.id === 'number' && isFinite(spec.id)){
+    const byId = getTrack(Math.round(spec.id));
+    if(byId) return byId;
+  }
+  if(typeof spec.name === 'string'){
+    const name = safeText(spec.name, 24);
+    if(name){
+      const hit = S.tracks.filter(t => t.name === name)[0];
+      if(hit) return hit;
+    }
+  }
+  return null;
+}
+function aiResolveActiveTrack(value, trackIds){
+  if(typeof value === 'number' && isFinite(value)){
+    const i = clamp(Math.round(value), 0, trackIds.length - 1);
+    const id = trackIds[i];
+    return (id === undefined || id === null) ? null : id;
+  }
+  if(typeof value === 'string'){
+    const name = safeText(value, 24);
+    if(!name) return null;
+    const hit = S.tracks.filter(t => t.name === name)[0] ||
+                S.tracks.filter(t => t.name.indexOf(name) >= 0)[0];
+    return hit ? hit.id : null;
+  }
+  return null;
+}
+function aiApplyTrackProps(track, spec){
+  const name = (typeof spec.name === 'string') ? safeText(spec.name, 24) : '';
+  if(name) track.name = name;
+  if(hasOwn(TIMBRES, spec.timbre)){
+    track.timbre = spec.timbre;
+    if(typeof spec.reverb !== 'number') track.reverb = TIMBRES[spec.timbre].reverb;
+  }
+  if(typeof spec.volume === 'number' && isFinite(spec.volume)) track.volume = clamp(spec.volume, 0, 1);
+  if(typeof spec.pan === 'number' && isFinite(spec.pan)) track.pan = clamp(spec.pan, -1, 1);
+  if(typeof spec.reverb === 'number' && isFinite(spec.reverb)) track.reverb = clamp(spec.reverb, 0, 1);
+  if(typeof spec.mute === 'boolean') track.mute = spec.mute;
+  if(typeof spec.solo === 'boolean') track.solo = spec.solo;
+  const col = safeColor(spec.color);
+  if(col){
+    track.color = col;
+  }else if(typeof spec.colorIndex === 'number' && isFinite(spec.colorIndex)){
+    const n = TRACK_COLORS.length;
+    const idx = ((Math.round(spec.colorIndex) % n) + n) % n;
+    track.color = TRACK_COLORS[idx];
+  }
+  return track;
+}
+function aiDropTrack(trackId){
+  if(S.tracks.length <= 1) return false;
+  S.tracks = S.tracks.filter(t => t.id !== trackId);
+  S.notes = S.notes.filter(n => n.trackId !== trackId);
+  if(audioGraph && audioGraph.trackNodes[trackId]){
+    const n = audioGraph.trackNodes[trackId];
+    try{ n.gain.disconnect(); n.pan.disconnect(); n.reverbSend.disconnect(); }catch(e){}
+    delete audioGraph.trackNodes[trackId];
+  }
+  if(S.activeTrackId === trackId) S.activeTrackId = S.tracks.length ? S.tracks[0].id : null;
+  return true;
+}
 function applyAISettings(settings){
   if(!settings || typeof settings !== 'object') return [];
   const changes = [];
@@ -2958,12 +3100,21 @@ function applyAISettings(settings){
       S.timeNum = n; S.timeDen = d; syncTimeSigSelect();
       changes.push('拍号 ' + n + '/' + d); flashField(timeSigField);
     }
+  }else if(typeof settings.timeSig === 'string'){
+    const m = settings.timeSig.match(/^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*$/);
+    if(m){
+      const n = clamp(parseInt(m[1], 10), 1, 32), d = clamp(parseInt(m[2], 10), 1, 32);
+      if(n !== S.timeNum || d !== S.timeDen){
+        S.timeNum = n; S.timeDen = d; syncTimeSigSelect();
+        changes.push('拍号 ' + n + '/' + d); flashField(timeSigField);
+      }
+    }
   }
   if(typeof settings.bars === 'number' && isFinite(settings.bars)){
     const v = clamp(Math.round(settings.bars), 1, MAX_BARS);
     if(v !== S.bars){ S.bars = v; barsInput.value = v; changes.push('小节 ' + v); flashField(barsField); }
   }
-  if(typeof settings.scale === 'string' && SCALES[settings.scale]){
+  if(hasOwn(SCALES, settings.scale)){
     if(settings.scale !== S.scale){
       S.scale = settings.scale; scaleSelect.value = settings.scale;
       changes.push('音阶 ' + SCALES[settings.scale].label);
@@ -2977,6 +3128,30 @@ function applyAISettings(settings){
       changes.push('缩放 ' + v + '×'); flashField(zoomField);
     }
   }
+  if(typeof settings.snap === 'number' && isFinite(settings.snap)){
+    const v = nearestSnap(settings.snap);
+    if(v !== S.snap){
+      S.snap = v; snapSelect.value = String(v);
+      changes.push('吸附 ' + snapLabel(v)); flashField(snapField);
+    }
+  }
+  if(hasOwn(DUR_BY_ID, settings.curDur)){
+    if(settings.curDur !== S.curDur && setCurDur(settings.curDur)){
+      changes.push('输入时值 ' + DUR_BY_ID[settings.curDur].name);
+    }
+  }
+  if(typeof settings.showJianpu === 'boolean' && settings.showJianpu !== S.showJianpu){
+    S.showJianpu = settings.showJianpu; jpToggle.checked = S.showJianpu;
+    changes.push('简谱 ' + (S.showJianpu ? '开' : '关'));
+  }
+  if(typeof settings.metronome === 'boolean' && settings.metronome !== S.metronome){
+    S.metronome = settings.metronome; metroInput.checked = S.metronome;
+    changes.push('节拍器 ' + (S.metronome ? '开' : '关'));
+  }
+  if(typeof settings.loop === 'boolean' && settings.loop !== S.loop){
+    S.loop = settings.loop; loopInput.checked = S.loop;
+    changes.push('循环 ' + (S.loop ? '开' : '关'));
+  }
   return changes;
 }
 function flashField(el){
@@ -2985,32 +3160,81 @@ function flashField(el){
   el.classList.add('ai-flash');
   setTimeout(() => el.classList.remove('ai-flash'), 1500);
 }
+function refreshAfterAI(){
+  updateMetrics(); rebuildRows(); rebuildTimeline();
+  renderTracks(); renderNotes();
+}
 function applyAIMelody(parsed){
-  if(!parsed || !Array.isArray(parsed.notes) || !parsed.notes.length) throw new Error('AI 没有返回有效音符');
+  if(!parsed || typeof parsed !== 'object') throw new Error('AI 返回内容无法解析');
+  const tracksSpec  = Array.isArray(parsed.tracks) ? parsed.tracks : null;
+  const notesSpec   = Array.isArray(parsed.notes) ? parsed.notes : null;
+  const hasSettings = !!(parsed.settings && typeof parsed.settings === 'object');
+  const hasTracks   = !!(tracksSpec && tracksSpec.length);
+  const hasNotes    = !!(notesSpec && notesSpec.length);
+  if(!hasTracks && !hasNotes && !hasSettings) throw new Error('AI 没有返回任何可应用的改动');
   stop();
   const before = snapshotAll();
   const settingsChanges = applyAISettings(parsed.settings);
+  const settings = hasSettings ? parsed.settings : {};
+
+  /* ---- 轨道：默认整轨重建；tracksMode:"merge" 时按 id / name 增量增删改 ---- */
+  const mergeTracks = (parsed.tracksMode === 'merge');
   let trackIds = [];
-  if(Array.isArray(parsed.tracks) && parsed.tracks.length){
-    S.tracks = [];
-    S.nextTrackId = 1;
-    parsed.tracks.forEach((t, i) => {
-      const timbre = (typeof t.timbre === 'string' && TIMBRES[t.timbre]) ? t.timbre : 'piano';
-      const newTrack = createTrack(String(t.name || ('轨道 ' + (i+1))).slice(0, 24), timbre, i);
-      newTrack.volume = clamp(Number(t.volume) || 0.8, 0, 1);
-      newTrack.pan = clamp(Number(t.pan) || 0, -1, 1);
-      newTrack.reverb = (typeof t.reverb === 'number') ? clamp(t.reverb, 0, 1) : TIMBRES[timbre].reverb;
-      S.tracks.push(newTrack);
-      trackIds.push(newTrack.id);
+  let created = 0, updated = 0, deleted = 0, clearedNotes = false;
+  if(hasTracks){
+    if(!mergeTracks){
+      S.tracks = [];
+      S.nextTrackId = 1;
+    }
+    tracksSpec.forEach((raw, i) => {
+      const spec = (raw && typeof raw === 'object') ? raw : {};
+      const target = mergeTracks ? aiFindTrack(spec) : null;
+      if(spec.delete === true){
+        if(target && aiDropTrack(target.id)) deleted++;
+        trackIds.push(null);
+        return;
+      }
+      let track = target;
+      if(track){
+        updated++;
+      }else{
+        if(S.tracks.length >= MAX_TRACKS){
+          trackIds.push(null);
+          if(settingsChanges.indexOf('轨道已达上限 ' + MAX_TRACKS) < 0){
+            settingsChanges.push('轨道已达上限 ' + MAX_TRACKS);
+          }
+          return;
+        }
+        const timbre = hasOwn(TIMBRES, spec.timbre) ? spec.timbre : 'piano';
+        track = createTrack(safeText(spec.name, 24) || ('轨道 ' + (i + 1)), timbre, S.tracks.length);
+        S.tracks.push(track);
+        created++;
+      }
+      aiApplyTrackProps(track, spec);
+      trackIds.push(track.id);
     });
-    S.activeTrackId = trackIds[0];
+    if(!S.tracks.length){
+      const t = createTrack('主旋律', 'piano', 0);
+      S.tracks.push(t);
+    }
+    const usable = trackIds.filter(id => id !== null && !!getTrack(id));
+    S.activeTrackId = aiResolveActiveTrack(settings.activeTrack, trackIds) || usable[0] || S.tracks[0].id;
+    if(!mergeTracks && S.notes.length){
+      /* 整轨重建：旧轨道的音符已不再对应，全部清空（想保留音符请用 tracksMode:"merge"） */
+      S.notes = [];
+      clearedNotes = true;
+      if(!hasNotes) settingsChanges.push('清空旧音符');
+    }
+    if(!mergeTracks) settingsChanges.push('轨道重建 ' + S.tracks.length + ' 轨');
+    else if(created || updated || deleted) settingsChanges.push('轨道 建' + created + ' 改' + updated + ' 删' + deleted);
   }else{
-    const active = getActiveTrack();
-    if(!active){
+    if(!S.tracks.length){
       const t = createTrack('主旋律', 'piano', 0);
       S.tracks = [t]; S.activeTrackId = t.id;
     }
-    trackIds = [getActiveTrack().id];
+    if(!S.activeTrackId || !getTrack(S.activeTrackId)) S.activeTrackId = S.tracks[0].id;
+    trackIds = S.tracks.map(t => t.id);
+    S.activeTrackId = aiResolveActiveTrack(settings.activeTrack, trackIds) || S.activeTrackId;
   }
   if(audioGraph){
     Object.keys(audioGraph.trackNodes).forEach(id => {
@@ -3019,31 +3243,58 @@ function applyAIMelody(parsed){
     });
     audioGraph.trackNodes = {};
   }
-  const list = [];
-  for(let i=0;i<parsed.notes.length;i++){
-    const n = parsed.notes[i];
-    if(!n || typeof n.pitch === 'undefined') continue;
-    const pitch = clamp(Math.round(Number(n.pitch)), PITCH_LOW, PITCH_HIGH);
-    if(isNaN(pitch)) continue;
-    let startBeat = Number(n.start); if(isNaN(startBeat) || startBeat < 0) startBeat = 0;
-    let durBeat = Number(n.dur); if(isNaN(durBeat) || durBeat <= 0) durBeat = 1;
-    const trackIdx = (typeof n.track === 'number') ? clamp(Math.round(n.track), 0, trackIds.length-1) : 0;
-    const vel = (typeof n.vel === 'number') ? clamp(n.vel, 0.05, 1) : 0.85;
-    list.push({ id: S.nextId++, trackId: trackIds[trackIdx], pitch,
-                start: Math.max(0, Math.round(startBeat * SUB)),
-                length: Math.max(1, Math.round(durBeat * SUB)), velocity: vel });
+
+  /* ---- 音符：默认替换全部；notesMode:"append" 时追加；不返回 notes 则不动音符 ---- */
+  /* merge 属增量模式：未显式指定 notesMode 时默认追加，避免误删其它轨道的音符 */
+  const appendNotes = (parsed.notesMode === 'append') ||
+                      (parsed.notesMode === undefined && mergeTracks);
+  /* 音符位置 / 时长上界（以四分音符计）：以当前工程小节为基准，最多允许铺到 64 小节 */
+  const beatUnit    = Math.max(1, S.timeNum);
+  const maxBeat     = Math.max(Math.min(S.bars, MAX_BARS), 64) * beatUnit;
+  const maxNoteBeat = 8 * beatUnit;                  /* 单个音符最长 8 小节 */
+  const written = [];
+  if(hasNotes){
+    for(let i = 0; i < notesSpec.length; i++){
+      if(written.length >= AI_MAX_NOTES) break;
+      const n = notesSpec[i];
+      if(!n || typeof n !== 'object' || typeof n.pitch === 'undefined') continue;
+      const pitch = clamp(Math.round(Number(n.pitch)), PITCH_LOW, PITCH_HIGH);
+      if(isNaN(pitch)) continue;
+      let startBeat = Number(n.start); if(!isFinite(startBeat) || startBeat < 0) startBeat = 0;
+      let durBeat   = Number(n.dur);   if(!isFinite(durBeat) || durBeat <= 0) durBeat = 1;
+      if(startBeat > maxBeat) startBeat = maxBeat;
+      if(durBeat   > maxNoteBeat) durBeat = maxNoteBeat;
+      let tid = S.activeTrackId;
+      if(typeof n.track === 'number'){
+        const idx = clamp(Math.round(n.track), 0, trackIds.length - 1);
+        tid = trackIds[idx];
+      }
+      if(tid === undefined || tid === null || !getTrack(tid)) continue;
+      const vel = (typeof n.vel === 'number') ? clamp(n.vel, 0.05, 1) : 0.85;
+      written.push({ id: S.nextId++, trackId: tid, pitch,
+                     start: Math.max(0, Math.round(startBeat * SUB)),
+                     length: Math.max(1, Math.round(durBeat * SUB)), velocity: vel });
+    }
+    written.sort((a,b)=> a.start - b.start);
+    if(!written.length){
+      refreshAfterAI();
+      commitAction(before);
+      throw new Error('AI 返回的音符无法解析（参数 / 轨道改动已保留，可 Ctrl+Z 撤销）');
+    }
+    S.notes = appendNotes ? S.notes.concat(written) : written;
+    if(notesSpec.length > AI_MAX_NOTES) settingsChanges.push('音符截断至 ' + AI_MAX_NOTES);
+    if(appendNotes) settingsChanges.push(clearedNotes ? '追加（旧音符已清空）' : '追加音符');
   }
-  if(!list.length) throw new Error('AI 返回的音符无法解析');
-  list.sort((a,b)=> a.start - b.start);
-  S.notes = list;
   const needSubs = contentEnd() + subPerBar();
   const needBars = Math.ceil(needSubs / subPerBar());
   if(needBars > S.bars){ S.bars = Math.min(needBars, MAX_BARS); barsInput.value = S.bars; }
-  updateMetrics(); rebuildRows(); rebuildTimeline();
-  renderTracks(); renderNotes();
+  refreshAfterAI();
   commitAction(before);
   stageEl.scrollLeft = 0; setPlayhead(0, true);
-  return { noteCount: list.length, trackCount: trackIds.length, settingsChanges };
+  const noteText = hasNotes
+    ? ('写入 ' + written.length + ' 个音符')
+    : (clearedNotes ? '音符已清空' : '未改动音符');
+  return { noteCount: written.length, trackCount: S.tracks.length, settingsChanges, noteText };
 }
 async function aiSubmit(){
   if(aiBusy) return;
@@ -3063,7 +3314,7 @@ async function aiSubmit(){
     const result = applyAIMelody(parsed);
     const reply = parsed.reply || '已为你生成一段旋律';
     const bubble = addAIMessage('assistant', reply);
-    addAppliedBadge(bubble, result.noteCount, result.trackCount, result.settingsChanges);
+    addAppliedBadge(bubble, result.noteCount, result.trackCount, result.settingsChanges, result.noteText);
     aiHistory.push({ role:'assistant', content: raw });
     if(aiHistory.length > 16) aiHistory = aiHistory.slice(-16);
   }catch(err){
