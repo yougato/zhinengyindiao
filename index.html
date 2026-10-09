@@ -320,6 +320,14 @@
   .ai-set-row input,.ai-set-row select{flex:1;font-family:inherit;font-size:12px;padding:6px 9px;border-radius:7px;border:1px solid var(--line2);background:#0f1219;color:var(--text);outline:none;min-width:0;}
   .ai-key-hint{font-size:10px;color:#5d6680;line-height:1.55;}
   .ai-key-hint a{color:#8a95ad;text-decoration:none;}
+  .ai-key-hint.warn{color:#ff9aa2;}
+  .ai-gear{font-size:15px;}
+  .ai-gear.on{color:#c0b4ff;background:rgba(124,92,255,.16);}
+  .ai-settings.collapsed{display:none;}
+  .ai-set-actions{display:flex;gap:6px;}
+  .ai-mini{flex:1;font-family:inherit;font-size:11px;font-weight:600;padding:5px 8px;border-radius:7px;border:1px solid var(--line2);background:#151a26;color:#98a3bb;cursor:pointer;transition:all .14s;white-space:nowrap;}
+  .ai-mini:hover{background:#1f2739;color:#c0b4ff;}
+  .ai-mini:disabled{opacity:.55;cursor:default;}
   .ai-quick{flex:none;display:flex;gap:6px;flex-wrap:wrap;padding:9px 15px;border-bottom:1px solid var(--line);background:var(--panel2);}
   .ai-quick button{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--line2);background:#151a26;color:#98a3bb;cursor:pointer;transition:all .14s;white-space:nowrap;}
   .ai-quick button:hover{background:#1f2739;color:#c0b4ff;}
@@ -502,6 +510,7 @@
       <p><b>鼓组映射</b>：C 底鼓 · D 军鼓 · E 踩镲 · F–G 嗵鼓 · A 吊镲</p>
       <p><b>轨道条高度</b>：拖拽顶部横条上下拉动（双击复位）</p>
       <p><b>非活动轨</b>音符半透明显示</p>
+      <p><b>AI 服务</b>：AI 面板右上角 ⚙ 可切换任意兼容 OpenAI 的大模型 API（含本机代理）</p>
       <p><b>空格</b>播放/停止 · <b>Ctrl+Z</b> 撤销</p>
     </div>
   </aside>
@@ -546,18 +555,27 @@
   <div class="ai-header">
     <div class="ai-dot"></div>
     <div class="ai-title">AI 作曲助手</div>
-    <div class="ai-sub">DeepSeek · 多轨</div>
+    <div class="ai-sub" id="aiSub">DeepSeek · deepseek-chat</div>
+    <button class="ai-close ai-gear" id="aiSettingsBtn" title="API 设置（服务 / 地址 / 模型 / Key）">⚙</button>
     <button class="ai-close" id="aiClose">×</button>
   </div>
-  <div class="ai-settings">
-    <div class="ai-set-row"><label>API Key</label><input type="password" id="aiKey" placeholder="sk-..." autocomplete="off" spellcheck="false"></div>
+  <div class="ai-settings" id="aiSettings">
+    <div class="ai-set-row"><label>服务</label><select id="aiProvider"></select></div>
+    <div class="ai-set-row"><label>接口地址</label><input type="text" id="aiBaseUrl" spellcheck="false" autocomplete="off" placeholder="https://api.deepseek.com/chat/completions"></div>
     <div class="ai-set-row"><label>模型</label>
-      <select id="aiModel">
-        <option value="deepseek-chat">deepseek-chat（推荐）</option>
-        <option value="deepseek-reasoner">deepseek-reasoner（R1）</option>
-      </select>
+      <input type="text" id="aiModel" list="aiModelList" spellcheck="false" autocomplete="off" placeholder="deepseek-chat">
+      <datalist id="aiModelList"></datalist>
     </div>
-    <div class="ai-key-hint">Key 仅保存在本机浏览器。前往 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com</a> 获取。</div>
+    <div class="ai-set-row"><label>最大输出</label><input type="number" id="aiMaxTokens" min="0" max="32000" step="256" value="8000" title="max_tokens：写长曲被截断时调大它（DeepSeek chat 上限 8192，推理模型可 16384+）；留空或填 0 = 不发送该参数"></div>
+    <div class="ai-set-row"><label>API Key</label><input type="password" id="aiKey" placeholder="sk-...（用本机代理时可留空）" autocomplete="off" spellcheck="false"></div>
+    <div class="ai-set-row"><label>选项</label>
+      <label class="field" style="flex:1;"><input id="aiJsonMode" type="checkbox" checked> JSON 模式（个别服务不支持，会自动去掉重试）</label>
+    </div>
+    <div class="ai-set-actions">
+      <button type="button" class="ai-mini" id="aiProxyBtn" title="填入 http://127.0.0.1:8787/v1/chat/completions（需先运行 llm-proxy.ps1）">填入本机代理地址</button>
+      <button type="button" class="ai-mini" id="aiTestBtn">测试连接</button>
+    </div>
+    <div class="ai-key-hint" id="aiHint">只要兼容 OpenAI 的 /chat/completions 就能用；Key 存在本机浏览器，但会随请求发往上面填写的接口地址。跨域被拦时用 llm-proxy.ps1 本机代理。</div>
   </div>
   <div class="ai-quick" id="aiQuick"></div>
   <div class="ai-messages" id="aiMessages"></div>
@@ -890,6 +908,11 @@ const bpmField = $('bpmField'), timeSigField = $('timeSigField'), barsField = $(
 const snapField = $('snapField'), zoomField = $('zoomField');
 const aiPanel = $('aiPanel'), aiBackdrop = $('aiBackdrop'), aiClose = $('aiClose');
 const aiKey = $('aiKey'), aiModel = $('aiModel'), aiMessages = $('aiMessages');
+const aiSettings = $('aiSettings'), aiSettingsBtn = $('aiSettingsBtn'), aiSub = $('aiSub');
+const aiProvider = $('aiProvider'), aiBaseUrlInput = $('aiBaseUrl'), aiJsonMode = $('aiJsonMode');
+const aiModelList = $('aiModelList'), aiProxyBtn = $('aiProxyBtn'), aiTestBtn = $('aiTestBtn');
+const aiMaxTokens = $('aiMaxTokens');
+const aiHint = $('aiHint');
 const aiInput = $('aiInput'), aiSend = $('aiSend'), aiQuick = $('aiQuick');
 const projModal = $('projModal'), projBackdrop = $('projBackdrop'), projClose = $('projClose');
 const projName = $('projName'), projSaveBtn = $('projSaveBtn'), projList = $('projList');
@@ -3593,19 +3616,168 @@ projFileInput.addEventListener('change', function(){
   this.value = '';
 });
 
-const AI_STORAGE_KEY = 'melodygrid.deepseek.key';
-const AI_MODEL_KEY   = 'melodygrid.deepseek.model';
+/* ★ 可配置的大模型服务：任何兼容 OpenAI /chat/completions 的服务都能用 */
+const AI_CFG_KEY  = 'melodygrid.ai.config';
+const AI_KEY_KEY  = 'melodygrid.ai.key';
+const AI_OLD_KEY  = 'melodygrid.deepseek.key';      /* 旧版存过 DeepSeek Key，兼容读取一次 */
+const AI_OLD_MODEL= 'melodygrid.deepseek.model';
+const AI_HINT_DEFAULT = '只要兼容 OpenAI 的 /chat/completions 就能用；Key 存在本机浏览器，但会随请求发往上面填写的接口地址。跨域被拦时用 llm-proxy.ps1 本机代理。';
+const AI_PROVIDERS = [
+  { id:'deepseek',    label:'DeepSeek',              url:'https://api.deepseek.com/chat/completions',
+    models:['deepseek-chat','deepseek-reasoner'] },
+  { id:'openai',      label:'OpenAI',                url:'https://api.openai.com/v1/chat/completions',
+    models:['gpt-4o-mini','gpt-4o','gpt-4.1-mini','o4-mini'] },
+  { id:'qwen',        label:'通义千问',               url:'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    models:['qwen-plus','qwen-max','qwen-turbo'] },
+  { id:'moonshot',    label:'Kimi / Moonshot',       url:'https://api.moonshot.cn/v1/chat/completions',
+    models:['moonshot-v1-8k','moonshot-v1-32k'] },
+  { id:'zhipu',       label:'智谱 GLM',              url:'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    models:['glm-4-plus','glm-4-air','glm-4-flash'] },
+  { id:'siliconflow', label:'硅基流动',               url:'https://api.siliconflow.cn/v1/chat/completions',
+    models:['deepseek-ai/DeepSeek-V3','Qwen/Qwen2.5-72B-Instruct'] },
+  { id:'openrouter',  label:'OpenRouter',            url:'https://openrouter.ai/api/v1/chat/completions',
+    models:['deepseek/deepseek-chat','anthropic/claude-3.5-sonnet','google/gemini-2.0-flash-001'] },
+  { id:'ollama',      label:'Ollama（本机）',         url:'http://127.0.0.1:11434/v1/chat/completions',
+    models:['llama3.1','qwen2.5','gemma2'] },
+  { id:'proxy',       label:'本机代理 llm-proxy.ps1', url:'http://127.0.0.1:8787/v1/chat/completions',
+    models:['deepseek-chat','deepseek-reasoner','glm-4-flash'] },
+  { id:'custom',      label:'自定义…',               url:'', models:[] }
+];
 let aiHistory = [];
 let aiBusy = false;
-try{
-  const savedKey = localStorage.getItem(AI_STORAGE_KEY);
-  if(savedKey) aiKey.value = savedKey;
-  const savedModel = localStorage.getItem(AI_MODEL_KEY);
-  if(savedModel) aiModel.value = savedModel;
-}catch(e){}
-aiKey.addEventListener('change',()=>{ try{ localStorage.setItem(AI_STORAGE_KEY, aiKey.value.trim()); }catch(e){} });
-aiKey.addEventListener('blur',()=>{ try{ localStorage.setItem(AI_STORAGE_KEY, aiKey.value.trim()); }catch(e){} });
-aiModel.addEventListener('change',()=>{ try{ localStorage.setItem(AI_MODEL_KEY, aiModel.value); }catch(e){} });
+function aiProviderById(id){
+  return AI_PROVIDERS.filter(p => p.id === id)[0] || null;
+}
+function loadAIConfigFromStorage(){
+  let cfg = {};
+  try{ const s = localStorage.getItem(AI_CFG_KEY); if(s) cfg = JSON.parse(s) || {}; }catch(e){ cfg = {}; }
+  if(!cfg || typeof cfg !== 'object') cfg = {};
+  try{
+    if(!cfg.key) cfg.key = localStorage.getItem(AI_KEY_KEY) || localStorage.getItem(AI_OLD_KEY) || '';
+    if(!cfg.model) cfg.model = localStorage.getItem(AI_OLD_MODEL) || '';
+  }catch(e){}
+  if(!aiProviderById(cfg.provider)) cfg.provider = 'deepseek';
+  if(cfg.jsonMode === undefined) cfg.jsonMode = true;
+  const mt = parseInt(cfg.maxTokens, 10);
+  cfg.maxTokens = isFinite(mt) ? clamp(mt, 0, 32000) : 8000;   /* 0 = 不发送该参数 */
+  const p = aiProviderById(cfg.provider);
+  if(!cfg.url) cfg.url = (p && p.url) || AI_PROVIDERS[0].url;
+  if(!cfg.model) cfg.model = (p && p.models[0]) || 'deepseek-chat';
+  return cfg;
+}
+let aiCfg = loadAIConfigFromStorage();
+
+function aiMaxTokensValue(){
+  const raw = (aiMaxTokens && aiMaxTokens.value !== undefined) ? String(aiMaxTokens.value).trim() : '';
+  if(raw === '') return 0;                       /* 留空 = 不发送 max_tokens（个别服务只认 max_completion_tokens） */
+  const v = parseInt(raw, 10);
+  if(!isFinite(v)) return 8000;
+  if(v <= 0) return 0;                           /* 填 0 同样表示不发送 */
+  return clamp(v, 256, 32000);
+}
+function readAIConfigFromUI(){
+  return {
+    url: String(aiBaseUrlInput.value || '').trim(),
+    model: String(aiModel.value || '').trim(),
+    key: String(aiKey.value || '').trim(),
+    jsonMode: !!aiJsonMode.checked,
+    maxTokens: aiMaxTokensValue()
+  };
+}
+function updateAIHeader(){
+  const p = aiProviderById(aiProvider.value);
+  if(aiSub) aiSub.textContent = (p ? p.label : '自定义') + ' · ' + (String(aiModel.value || '').trim() || '未设模型');
+}
+function saveAIConfig(){
+  const cfg = readAIConfigFromUI();
+  aiCfg.provider = aiProvider.value;
+  aiCfg.url = cfg.url; aiCfg.model = cfg.model;
+  aiCfg.jsonMode = cfg.jsonMode; aiCfg.key = cfg.key;
+  aiCfg.maxTokens = cfg.maxTokens;
+  try{
+    localStorage.setItem(AI_CFG_KEY, JSON.stringify({
+      provider: aiCfg.provider, url: cfg.url, model: cfg.model,
+      jsonMode: cfg.jsonMode, maxTokens: cfg.maxTokens
+    }));
+  }catch(e){}
+  try{ if(cfg.key) localStorage.setItem(AI_KEY_KEY, cfg.key); }catch(e){}
+  try{
+    if(!cfg.key){                       /* 清空就真的删掉，避免刷新后又从旧键读回来 */
+      localStorage.removeItem(AI_KEY_KEY);
+      localStorage.removeItem(AI_OLD_KEY);
+    }
+  }catch(e){}
+  updateAIHeader();
+}
+function fillAIModelList(models){
+  if(!aiModelList) return;
+  aiModelList.innerHTML = '';
+  (models || []).forEach(m => {
+    const o = document.createElement('option');
+    o.value = m;
+    aiModelList.appendChild(o);
+  });
+}
+let aiHintFlashTimer = null;
+function flashAIHint(msg, ms){
+  if(!aiHint) return;
+  aiHint.textContent = msg;
+  aiHint.classList.toggle('warn', /^✗/.test(msg));
+  if(aiHintFlashTimer) clearTimeout(aiHintFlashTimer);
+  aiHintFlashTimer = setTimeout(function(){
+    aiHint.textContent = AI_HINT_DEFAULT;
+    aiHint.classList.remove('warn');
+  }, ms || 5000);
+}
+function initAIProviderUI(){
+  AI_PROVIDERS.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.label;
+    aiProvider.appendChild(o);
+  });
+  aiProvider.value = aiCfg.provider;
+  aiBaseUrlInput.value = aiCfg.url;
+  aiModel.value = aiCfg.model;
+  aiJsonMode.checked = !!aiCfg.jsonMode;
+  aiKey.value = aiCfg.key || '';
+  if(aiMaxTokens) aiMaxTokens.value = aiCfg.maxTokens ? String(aiCfg.maxTokens) : '';
+  const p = aiProviderById(aiCfg.provider);
+  fillAIModelList(p ? p.models : []);
+  updateAIHeader();
+}
+initAIProviderUI();
+
+aiProvider.addEventListener('change', function(){
+  const changed = (this.value !== aiCfg.provider);
+  const p = aiProviderById(this.value);
+  if(changed) aiKey.value = '';        /* 换服务商就清掉上一家的 Key，别把 A 家的 Key 发到 B 家 */
+  if(p && p.url) aiBaseUrlInput.value = p.url;
+  if(p && p.models && p.models.length) aiModel.value = p.models[0];
+  fillAIModelList(p ? p.models : []);
+  saveAIConfig();
+  if(changed) flashAIHint('已切换服务并清空上一家的 API Key；用本机代理或免鉴权服务时可留空。');
+});
+aiBaseUrlInput.addEventListener('change', saveAIConfig);
+aiModel.addEventListener('change', saveAIConfig);
+aiModel.addEventListener('input', updateAIHeader);
+aiJsonMode.addEventListener('change', saveAIConfig);
+aiMaxTokens.addEventListener('change', saveAIConfig);
+aiKey.addEventListener('change', saveAIConfig);
+aiKey.addEventListener('blur', saveAIConfig);
+aiSettingsBtn.addEventListener('click', function(){
+  const collapsed = aiSettings.classList.toggle('collapsed');
+  this.classList.toggle('on', !collapsed);
+});
+aiProxyBtn.addEventListener('click', function(){
+  aiBaseUrlInput.value = 'http://127.0.0.1:8787/v1/chat/completions';
+  if(!String(aiModel.value || '').trim()){
+    const p = aiProviderById('proxy');
+    if(p) aiModel.value = p.models[0];
+  }
+  saveAIConfig();
+  flashAIHint('已填入本机代理地址：请确认已运行 llm-proxy.ps1，然后点「测试连接」。');
+});
+aiTestBtn.addEventListener('click', testAIConnection);
 
 const QUICK_PROMPTS = [
   { label:'钢琴独奏', text:'写一段欢快的 C 大调钢琴独奏旋律，4/4 拍，BPM 128，8 小节' },
@@ -3629,7 +3801,8 @@ function openAI(){
       '👋 我是 AI 作曲助手，可以修改工程里的任何参数：\n' +
       '· 多轨创作，或增量修改现有轨道（音色、音量、声像、混响、静音、独奏、增删轨道）\n' +
       '· 音符可整体替换，也可追加；能直接写鼓轨\n' +
-      '· BPM · 拍号 · 小节 · 音阶 · 吸附 · 缩放 · 简谱 · 节拍器 · 循环 · 画笔时值');
+      '· BPM · 拍号 · 小节 · 音阶 · 吸附 · 缩放 · 简谱 · 节拍器 · 循环 · 画笔时值\n' +
+      '· 右上角 ⚙ 可切换任意大模型服务（DeepSeek / OpenAI / 通义 / Kimi / 智谱 / 本机代理…）');
   }
   setTimeout(()=>aiInput.focus(), 300);
 }
@@ -3690,8 +3863,9 @@ function buildSystemPrompt(){
     trackLines || '  （无轨道）',
     '',
     '【输出格式 —— 必须严格遵守】',
-    '只输出一个 JSON 对象，不要 markdown 代码块，不要任何额外文字。格式：',
-    '{"reply":"简短说明","settings":{...},"tracksMode":"replace|merge","tracks":[...],"notesMode":"replace|append","notes":[...]}',
+    '- 整个回复就是一个 JSON 对象：不要 markdown 代码块、不要注释、不要尾随逗号、不要任何解释文字。',
+    '- 必须完整闭合：音符合集不要省略、不要用 "..." 占位；内容太多就减少小节数，宁短也不能被截断。',
+    '格式：{"reply":"简短说明","settings":{...},"tracksMode":"replace|merge","tracks":[...],"notesMode":"replace|append","notes":[...]}',
     'settings / tracks / notes 都是可选的，可以只改参数不写音符。',
     '',
     '【settings 字段 —— 全部可选】',
@@ -3733,49 +3907,142 @@ function buildSystemPrompt(){
     '- 写鼓轨用 drumkit 音色，音高取低音区的 C/D/E/F/G/A。'
   ].join('\n');
 }
-async function callDeepSeek(){
-  const key = aiKey.value.trim();
-  if(!key) throw new Error('请先填写 DeepSeek API Key');
-  const messages = [{ role:'system', content: buildSystemPrompt() }].concat(aiHistory.slice(-8));
-  const body = {
-    model: aiModel.value || 'deepseek-chat',
-    messages, temperature: 0.95, max_tokens: 4000, stream: false,
-    response_format: { type: 'json_object' }
-  };
+/* 统一的 chat/completions 调用：任何兼容 OpenAI 的服务 / 本机代理都走这里 */
+async function fetchAIChat(cfg, body, allowJsonRetry){
+  const headers = { 'Content-Type': 'application/json' };
+  if(cfg.key) headers['Authorization'] = 'Bearer ' + cfg.key;   /* 留空时不发头，交给本机代理注入 Key */
   let res;
   try{
-    res = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify(body)
-    });
+    res = await fetch(cfg.url, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   }catch(netErr){
-    throw new Error('网络请求失败：' + netErr.message);
+    throw new Error('网络请求失败：' + ((netErr && netErr.message) ? netErr.message : '未知错误') +
+      '。若地址是 https 且提示 Failed to fetch，通常是浏览器跨域(CORS)被拦：' +
+      '可运行 llm-proxy.ps1 本机代理后点「填入本机代理地址」。');
   }
+  let rawText = '';
+  try{ rawText = await res.text(); }catch(e){ rawText = ''; }
   if(!res.ok){
     let detail = '';
-    try{
-      const j = await res.json();
-      detail = (j.error && (j.error.message || j.error.code)) || JSON.stringify(j);
-    }catch(e){ detail = await res.text().catch(()=> ''); }
-    if(res.status === 401) throw new Error('API Key 无效或已过期（401）');
-    if(res.status === 402) throw new Error('账户余额不足（402）');
-    if(res.status === 429) throw new Error('请求过于频繁（429）');
-    throw new Error('API 错误 ' + res.status + '：' + String(detail).slice(0,180));
+    let parsed = null;
+    try{ parsed = JSON.parse(rawText); }catch(e){ parsed = null; }
+    if(parsed && parsed.error){
+      detail = parsed.error.message || parsed.error.code || JSON.stringify(parsed.error);
+    }else if(parsed){
+      detail = JSON.stringify(parsed);
+    }else{
+      detail = rawText;
+    }
+    detail = String(detail || '').slice(0, 200);
+    /* 有的服务/模型不支持 response_format:json_object（常直接 400）→ 去掉它重试一次 */
+    if(res.status === 400 && allowJsonRetry && body.response_format){
+      const retryBody = JSON.parse(JSON.stringify(body));
+      delete retryBody.response_format;
+      return await fetchAIChat(cfg, retryBody, false);
+    }
+    if(res.status === 400 && /max_tokens|max_completion_tokens/i.test(detail)){
+      throw new Error('服务拒绝了这个 max_tokens 值（400）：把 ⚙ 里的「最大输出」调小，或清空它表示不发送该参数' +
+        (detail ? '。上游返回：' + detail : ''));
+    }
+    if(res.status === 401) throw new Error('API Key 无效或未授权（401）' + (detail ? '：' + detail : ''));
+    if(res.status === 402) throw new Error('余额 / 配额不足（402）' + (detail ? '：' + detail : ''));
+    if(res.status === 404) throw new Error('接口地址不存在（404）：确认地址以 /v1/chat/completions 或 /chat/completions 结尾' + (detail ? '；' + detail : ''));
+    if(res.status === 429) throw new Error('请求过于频繁（429）' + (detail ? '：' + detail : ''));
+    throw new Error('API 错误 ' + res.status + (detail ? '：' + detail : ''));
   }
-  const data = await res.json();
-  if(!data.choices || !data.choices[0] || !data.choices[0].message) throw new Error('返回数据异常');
-  return data.choices[0].message.content;
+  let data = null;
+  try{ data = JSON.parse(rawText); }catch(e){ data = null; }
+  if(!data){
+    throw new Error('响应不是 JSON（可能被网关 / 代理拦截，或接口地址不对）：' + String(rawText || '').slice(0, 120));
+  }
+  if(!data.choices || !data.choices[0] || !data.choices[0].message){
+    throw new Error('返回数据异常：' + String(rawText).slice(0, 160));
+  }
+  return data;
 }
+async function callLLM(maxTokensOverride){
+  const cfg = readAIConfigFromUI();
+  if(!cfg.url) throw new Error('请先在 ⚙ 设置里填写接口地址');
+  if(!cfg.model) throw new Error('请先在 ⚙ 设置里填写模型名');
+  const messages = [{ role:'system', content: buildSystemPrompt() }].concat(aiHistory.slice(-8));
+  const mt = (typeof maxTokensOverride === 'number' && maxTokensOverride > 0)
+    ? maxTokensOverride : cfg.maxTokens;
+  const body = { model: cfg.model, messages, temperature: 0.8, stream: false };
+  if(mt > 0) body.max_tokens = mt;               /* 留空则不发送该参数 */
+  if(cfg.jsonMode) body.response_format = { type: 'json_object' };
+  const data = await fetchAIChat(cfg, body, true);
+  const choice = (data.choices && data.choices[0]) || {};
+  const msg = choice.message || {};
+  return {
+    content: String(msg.content || ''),
+    reasoning: String(msg.reasoning_content || msg.reasoning || ''),
+    finishReason: String(choice.finish_reason || ''),
+    usage: data.usage || null
+  };
+}
+async function testAIConnection(){
+  const cfg = readAIConfigFromUI();
+  if(!cfg.url){ flashAIHint('✗ 请先填写接口地址'); return; }
+  if(!cfg.model){ flashAIHint('✗ 请先填写模型名'); return; }
+  saveAIConfig();
+  const old = aiTestBtn.textContent;
+  aiTestBtn.disabled = true; aiTestBtn.textContent = '测试中…';
+  try{
+    const data = await fetchAIChat(cfg, {
+      model: cfg.model,
+      messages: [{ role:'user', content:'请只回复两个字：可用' }],
+      max_tokens: 24, stream: false
+    }, false);
+    const txt = String((data.choices[0].message.content) || '').trim();
+    flashAIHint('✓ 连接成功：' + (txt ? txt.slice(0, 40) : '（模型未返回文本，但接口正常）'));
+  }catch(err){
+    flashAIHint('✗ ' + ((err && err.message) ? err.message : '测试失败'), 12000);
+  }finally{
+    aiTestBtn.disabled = false; aiTestBtn.textContent = old;
+  }
+}
+/* 尽量把模型输出解析成 JSON：容忍 markdown 包裹、前后废话、尾随逗号、以及被截断的结尾。
+   返回 { value, truncated }；truncated=true 表示结尾是补全出来的（数据可能不完整）。 */
 function parseAIJSON(s){
+  const r = parseAIJSONEx(s);
+  return r ? r.value : null;
+}
+function parseAIJSONEx(s){
   if(!s) return null;
   let t = String(s).trim();
+  if(!t) return null;
   const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if(fence) t = fence[1].trim();
   const i = t.indexOf('{');
+  if(i < 0) return null;
   const j = t.lastIndexOf('}');
-  if(i >= 0 && j > i) t = t.slice(i, j+1);
-  try { return JSON.parse(t); } catch(e){ return null; }
+  const head = t.slice(i);
+  const cands = (j > i) ? [t.slice(i, j + 1), head] : [head];
+  for(let k = 0; k < cands.length; k++){
+    const got = tryParseJSONLoose(cands[k]);
+    if(got) return got;
+  }
+  return null;
+}
+function tryParseJSONLoose(str){
+  try{ return { value: JSON.parse(str), truncated: false }; }catch(e){}
+  /* 1) 去掉尾随逗号（弱模型常见） */
+  const s = str.replace(/,\s*([}\]])/g, '$1');
+  try{ return { value: JSON.parse(s), truncated: false }; }catch(e){}
+  /* 2) 输出被截断：回退到最后一个 } / ] 并补足未闭合的括号（标记 truncated，调用方需谨慎使用） */
+  let cut = s.length;
+  for(let tries = 0; tries < 40 && cut > 0; tries++){
+    const p = Math.max(s.lastIndexOf('}', cut - 1), s.lastIndexOf(']', cut - 1));
+    if(p < 0) break;
+    const head = s.slice(0, p + 1);
+    const openC = (head.match(/\{/g) || []).length - (head.match(/\}/g) || []).length;
+    const openS = (head.match(/\[/g) || []).length - (head.match(/\]/g) || []).length;
+    if(openC >= 0 && openS >= 0){
+      const fixed = head.replace(/,\s*$/, '') + ']'.repeat(openS) + '}'.repeat(openC);
+      try{ return { value: JSON.parse(fixed), truncated: true }; }catch(e){}
+    }
+    cut = p;
+  }
+  return null;
 }
 /* ★ AI 权限扩展：所有来自模型的值都经白名单 / 范围校验后再写入工程状态 */
 const SNAP_VALUES = [1, 2, 4, 8];
@@ -4083,24 +4350,80 @@ async function aiSubmit(){
   if(aiBusy) return;
   const text = aiInput.value.trim();
   if(!text) return;
-  try{ localStorage.setItem(AI_STORAGE_KEY, aiKey.value.trim()); }catch(e){}
+  saveAIConfig();
   aiInput.value = '';
   addAIMessage('user', text);
   aiHistory.push({ role:'user', content: text });
   aiBusy = true; aiSend.disabled = true; aiSend.textContent = '生成中…';
   const thinking = addAIMessage('assistant', '正在创作多轨音乐', true);
+  let pushed = 0;
   try{
-    const raw = await callDeepSeek();
+    let res = await callLLM();
+    let ex = parseAIJSONEx(res.content);
+    let parsed = ex ? ex.value : null;
+    let truncated = ex ? ex.truncated : false;
+    /* 没拿到可用 JSON，或输出明显被截断 → 纠正提示 + 更大输出上限，重试一次 */
+    if(!parsed || truncated || res.finishReason === 'length'){
+      const cut = (res.finishReason === 'length' || truncated);
+      thinking.textContent = cut ? '输出被长度上限截断，正在用更大上限重试…' : '格式不对，正在重试…';
+      aiHistory.push({ role:'assistant', content: res.content || '(空)' });
+      aiHistory.push({ role:'user', content:
+        '你上一条回复不是合法的 JSON' + (cut ? '（中途被截断）' : '') +
+        '。请只输出一个完整的 JSON 对象：不要解释、不要注释、不要 markdown 代码块、不要尾随逗号；' +
+        '如果内容太多就减少小节数，务必让 JSON 完整闭合。' });
+      pushed = 2;
+      const nowCfg = readAIConfigFromUI();
+      /* 只对本次请求放大上限，不改设置里的值 */
+      let retryMt = 0;
+      if(cut && nowCfg.maxTokens > 0){
+        retryMt = Math.min(16000, Math.max(nowCfg.maxTokens * 2, nowCfg.maxTokens + 2048));
+        if(retryMt > nowCfg.maxTokens) flashAIHint('输出被截断，本次重试临时把输出上限提到 ' + retryMt + ' tokens。');
+      }
+      res = await callLLM(retryMt);
+      ex = parseAIJSONEx(res.content);
+      parsed = ex ? ex.value : null;
+      truncated = ex ? ex.truncated : false;
+    }
+    if(pushed){ aiHistory.splice(aiHistory.length - pushed, pushed); pushed = 0; }
+    if(!parsed){
+      const tip = (res.finishReason === 'length')
+        ? '（输出被长度上限截断：把 ⚙ 里的「最大输出」调大，或让它少写几小节）'
+        : '（模型没有按要求返回 JSON）';
+      const snippet = String(res.content || res.reasoning || '').replace(/\s+/g, ' ').slice(0, 240);
+      throw new Error('AI 返回的内容不是有效 JSON' + tip +
+        (res.finishReason ? '［finish_reason=' + res.finishReason + '］' : '') +
+        '\n实际返回片段：' + (snippet || '（空）'));
+    }
+    /* 重试后仍然被截断：绝不能用半截数据重建工程（默认 replace 会清空你现有的音符） */
+    if(truncated || res.finishReason === 'length'){
+      const got = (parsed.notes && parsed.notes.length) || 0;
+      if(got > 0){
+        throw new Error('AI 的输出被长度上限截断了（只解析到 ' + got + ' 个音符）。' +
+          '为避免用半截内容覆盖你现有的音符，本次没有写入：请把 ⚙ 里的「最大输出」调大，' +
+          '或者让它少写几小节后重试。');
+      }
+      const onlySettings = { reply: parsed.reply, settings: parsed.settings };
+      if(!onlySettings.settings || !Object.keys(onlySettings.settings).length){
+        throw new Error('AI 输出被长度上限截断，且没有可用的参数设置。请把 ⚙ 里的「最大输出」调大后重试。');
+      }
+      addAIMessage('system', '⚠️ AI 输出被截断，本次只应用了参数设置（未改动音符）。');
+      const r2 = applyAIMelody(onlySettings);
+      const b2 = addAIMessage('assistant', parsed.reply || '已调整工程参数');
+      addAppliedBadge(b2, r2.noteCount, r2.trackCount, r2.settingsChanges, r2.noteText);
+      aiHistory.push({ role:'assistant', content: res.content });
+      if(aiHistory.length > 16) aiHistory = aiHistory.slice(-16);
+      thinking.remove();
+      return;
+    }
     thinking.remove();
-    const parsed = parseAIJSON(raw);
-    if(!parsed) throw new Error('AI 返回的内容不是有效 JSON，请重试');
     const result = applyAIMelody(parsed);
     const reply = parsed.reply || '已为你生成一段旋律';
     const bubble = addAIMessage('assistant', reply);
     addAppliedBadge(bubble, result.noteCount, result.trackCount, result.settingsChanges, result.noteText);
-    aiHistory.push({ role:'assistant', content: raw });
+    aiHistory.push({ role:'assistant', content: res.content });
     if(aiHistory.length > 16) aiHistory = aiHistory.slice(-16);
   }catch(err){
+    if(pushed) aiHistory.splice(aiHistory.length - pushed, pushed);
     thinking.remove();
     addAIMessage('error', '❌ ' + (err.message || '生成失败'));
     aiHistory.pop();
